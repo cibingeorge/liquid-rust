@@ -7,6 +7,7 @@ use liquid_core::runtime::PartialStore;
 use liquid_core::runtime::Renderable;
 use liquid_core::runtime::RenderingMode;
 
+#[derive(Debug)]
 pub struct Template {
     pub(crate) template: runtime::Template,
     pub(crate) partials: Option<sync::Arc<dyn PartialStore + Send + Sync>>,

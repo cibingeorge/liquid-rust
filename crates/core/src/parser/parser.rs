@@ -660,7 +660,6 @@ impl<'a> InvalidLiquidToken<'a> {
         next_elements: &mut dyn Iterator<Item = Pair>,
     ) -> Result<Box<dyn Renderable>> {
         use pest::error::LineColLocation;
-
         let invalid_token_span = self.element.as_span();
         let invalid_token_position = invalid_token_span.start_pos();
         let (offset_l, offset_c) = invalid_token_position.line_col();
@@ -669,13 +668,16 @@ impl<'a> InvalidLiquidToken<'a> {
             .rev()
             .find(|i| invalid_token_position.line_of().is_char_boundary(*i))
             .unwrap_or(0);
-
         let end_position = match next_elements.last() {
             Some(element) => element.as_span().end_pos(),
             None => invalid_token_span.end_pos(),
         };
 
-        let mut text = String::from(&invalid_token_position.line_of()[..offset_c]);
+        let line_of = invalid_token_position.line_of();
+        while !line_of.is_char_boundary(offset_c) && offset_c < line_of.len() {
+            offset_c += 1;
+        }
+        let mut text = String::from(&line_of[..offset_c]);
         text.push_str(invalid_token_position.span(&end_position).as_str());
 
         // Reparses from the line where invalid liquid started, in order
@@ -1054,6 +1056,16 @@ impl<'a> TagToken<'a> {
     /// Returns `Ok` if and only if the tokens' str is equal to the given str.
     pub fn expect_str(self, expected: &str) -> TryMatchToken<'a, ()> {
         if self.as_str() == expected {
+            TryMatchToken::Matches(())
+        } else {
+            // TODO change `self`'s state to be aware that `expected` was expected.
+            TryMatchToken::Fails(self)
+        }
+    }
+
+    /// Returns `Ok` if and only if the tokens' str is equal to the given str.
+    pub fn expect_case_insensitive_str(self, expected: &str) -> TryMatchToken<'a, ()> {
+        if self.as_str().to_ascii_lowercase() == expected.to_ascii_lowercase() {
             TryMatchToken::Matches(())
         } else {
             // TODO change `self`'s state to be aware that `expected` was expected.

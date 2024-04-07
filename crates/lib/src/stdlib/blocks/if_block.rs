@@ -413,10 +413,14 @@ fn parse_atom_condition(arguments: &mut PeekableTagTokenIter<'_>) -> Result<Cond
 fn parse_conjunction_chain(arguments: &mut PeekableTagTokenIter<'_>) -> Result<Condition> {
     let mut lh = parse_atom_condition(arguments)?;
 
-    while let Some("and") = arguments.peek().map(TagToken::as_str) {
-        arguments.next();
-        let rh = parse_atom_condition(arguments)?;
-        lh = Condition::Conjunction(Box::new(lh), Box::new(rh));
+    while let Some(val) = arguments.peek().map(TagToken::as_str).map(|f| f.to_ascii_lowercase()) {
+        if val.as_str() == "and" {
+            arguments.next();
+            let rh = parse_atom_condition(arguments)?;
+            lh = Condition::Conjunction(Box::new(lh), Box::new(rh));
+        } else {
+            break;
+        }
     }
 
     Ok(lh)
@@ -432,7 +436,7 @@ fn parse_condition(arguments: TagTokenIter<'_>) -> Result<Condition> {
 
     while let Some(token) = arguments.next() {
         token
-            .expect_str("or")
+            .expect_case_insensitive_str("or")
             .into_result_custom_msg("\"and\" or \"or\" expected.")?;
 
         let rh = parse_conjunction_chain(&mut arguments)?;
