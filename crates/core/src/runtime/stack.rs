@@ -287,6 +287,10 @@ impl<P: super::Runtime, O: ObjectView> super::Runtime for SandboxedStackFrame<P,
         self.parent.partials()
     }
 
+    fn render_mode(&self) -> &super::RenderingMode {
+             self.parent.render_mode()
+    }
+
     fn name(&self) -> Option<crate::model::KStringRef<'_>> {
         self.name
             .as_ref()

@@ -106,7 +106,7 @@ fn parse_condition(arguments: &mut TagTokenIter<'_>) -> Result<Vec<Expression>> 
     values.push(first_value);
 
     while let Some(token) = arguments.next() {
-        if let TryMatchToken::Fails(token) = token.expect_str("or") {
+        if let TryMatchToken::Fails(token) = token.expect_case_insensitive_str("or") {
             token
                 .expect_str(",")
                 .into_result_custom_msg("\"or\" or \",\" expected.")?;
