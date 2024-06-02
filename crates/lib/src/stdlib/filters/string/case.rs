@@ -55,12 +55,16 @@ pub struct Capitalize;
 #[name = "capitalize"]
 struct CapitalizeFilter;
 
+
 impl Filter for CapitalizeFilter {
     fn evaluate(&self, input: &dyn ValueView, _runtime: &dyn Runtime) -> Result<Value> {
         let s = input.to_kstr().to_owned();
         let mut chars = s.chars();
         let capitalized = match chars.next() {
-            Some(first_char) => first_char.to_uppercase().chain(chars).collect(),
+            Some(first_char) => {
+                let rest: String = chars.collect::<String>().to_lowercase();
+                first_char.to_uppercase().chain(rest.chars()).collect()
+            },
             None => String::new(),
         };
 
@@ -80,6 +84,10 @@ mod tests {
         );
         assert_eq!(
             liquid_core::call_filter!(Capitalize, "hello world 21").unwrap(),
+            liquid_core::value!("Hello world 21")
+        );
+        assert_eq!(
+            liquid_core::call_filter!(Capitalize, "hellO WORLD 21").unwrap(),
             liquid_core::value!("Hello world 21")
         );
 
