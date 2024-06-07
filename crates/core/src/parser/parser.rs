@@ -1270,6 +1270,10 @@ mod test {
 
                     Ok(())
                 }
+
+                fn is_blank(&self) -> bool {
+                    false
+                }
             }
 
             let mut options = Language::default();

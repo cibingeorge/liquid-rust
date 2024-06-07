@@ -83,6 +83,10 @@ impl Renderable for Assign {
         runtime.set_global(self.dst.clone(), value);
         Ok(())
     }
+
+    fn is_blank(&self) -> bool {
+        true
+    }
 }
 
 #[cfg(test)]

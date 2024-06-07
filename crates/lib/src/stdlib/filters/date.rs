@@ -32,7 +32,8 @@ impl Filter for DateFilter {
     fn evaluate(&self, input: &dyn ValueView, runtime: &dyn Runtime) -> Result<Value> {
         let args = self.args.evaluate(runtime)?;
 
-        let date = input.as_scalar().and_then(|s| s.to_date_time());
+        let date = input.as_scalar().and_then(|s| {
+            s.to_date_time()});
         match date {
             Some(date) if !args.format.is_empty() => {
                 let s = date.format(args.format.as_str()).map_err(|_err| {
@@ -41,7 +42,9 @@ impl Filter for DateFilter {
 
                 Ok(Value::scalar(s))
             }
-            _ => Ok(input.to_value()),
+            _ => {
+                Ok(input.to_value())
+            },
         }
     }
 }

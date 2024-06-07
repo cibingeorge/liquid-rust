@@ -223,6 +223,10 @@ impl Renderable for For {
         }
         Ok(())
     }
+
+    fn is_blank(&self) -> bool {
+        false
+    }
 }
 
 #[derive(Debug, Clone, ValueView, ObjectView)]
@@ -447,6 +451,11 @@ impl Renderable for TableRow {
 
         Ok(())
     }
+
+    fn is_blank(&self) -> bool {
+        false
+    }
+
 }
 
 #[derive(Debug, Clone, ValueView, ObjectView)]

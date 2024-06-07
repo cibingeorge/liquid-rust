@@ -70,6 +70,10 @@ impl Renderable for Comment {
     fn render_to(&self, _writer: &mut dyn Write, _runtime: &dyn Runtime) -> Result<()> {
         Ok(())
     }
+
+    fn is_blank(&self) -> bool {
+        true
+    }
 }
 
 #[cfg(test)]

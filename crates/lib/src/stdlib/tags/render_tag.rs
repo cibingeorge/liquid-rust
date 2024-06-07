@@ -234,6 +234,12 @@ impl Renderable for Render {
 
         Ok(())
     }
+
+
+    fn is_blank(&self) -> bool {
+        false
+    }
+
 }
 
 #[cfg(test)]

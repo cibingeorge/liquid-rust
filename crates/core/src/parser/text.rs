@@ -22,4 +22,12 @@ impl Renderable for Text {
         write!(writer, "{}", &self.text).replace("Failed to render")?;
         Ok(())
     }
+
+    fn is_blank(&self) -> bool {
+        self.text.find(|c: char| !c.is_whitespace()).is_none()
+    }
+
+    fn is_text(&self) -> bool {
+        true
+    }
 }

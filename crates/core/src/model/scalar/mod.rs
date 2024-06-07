@@ -126,6 +126,9 @@ impl<'s> ScalarCow<'s> {
     pub fn to_date_time(&self) -> Option<DateTime> {
         match self.0 {
             ScalarCowEnum::DateTime(ref x) => Some(*x),
+            ScalarCowEnum::Date(ref x) => {
+                Some(DateTime::from_ymd(x.year(), x.month(), x.day()))
+            },
             ScalarCowEnum::Str(ref x) => DateTime::from_str(x.as_str()),
             _ => None,
         }
