@@ -61,7 +61,7 @@ fn parse_if(
 ) -> Result<Box<dyn Renderable>> {
     let condition = parse_condition(arguments)?;
 
-    let mut if_true = Vec::new();
+    let mut if_true: Vec<Box<dyn Renderable>> = Vec::new();
     let mut if_false = None;
 
     while let Some(element) = tokens.next()? {
@@ -80,13 +80,22 @@ fn parse_if(
             element => if_true.push(element.parse(tokens, options)?),
         }
     }
+    let mut is_blank = if_true.iter().all(|x| x.is_blank());
+    if let Some(false_blk) = &if_false {
+        is_blank &= false_blk.iter().all(|x| x.is_blank());
+    };
 
+    if is_blank {
+        if_true = if_true.into_iter().filter(|x| !x.is_text()).collect();
+        if_false = if_false.map(|x| x.into_iter().filter(|x| !x.is_text()).collect());
+    }
     let if_true = Template::new(if_true);
     let if_false = if_false.map(Template::new);
 
     Ok(Box::new(Conditional {
         condition,
         mode: true,
+        is_blank,
         if_true,
         if_false,
     }))
@@ -139,6 +148,15 @@ impl ParseBlock for UnlessBlock {
                 element => if_true.push(element.parse(&mut tokens, options)?),
             }
         }
+        let mut is_blank = if_true.iter().all(|x| x.is_blank());
+        if let Some(false_blk) = &if_false {
+            is_blank &= false_blk.iter().all(|x| x.is_blank());
+        };
+
+        if is_blank {
+            if_true = if_true.into_iter().filter(|x| !x.is_text()).collect();
+            if_false = if_false.map(|x| x.into_iter().filter(|x| !x.is_text()).collect());
+        }
 
         let if_true = Template::new(if_true);
         let if_false = if_false.map(Template::new);
@@ -147,6 +165,7 @@ impl ParseBlock for UnlessBlock {
         Ok(Box::new(Conditional {
             condition,
             mode: false,
+            is_blank,
             if_true,
             if_false,
         }))
@@ -161,6 +180,7 @@ impl ParseBlock for UnlessBlock {
 struct Conditional {
     condition: Condition,
     mode: bool,
+    is_blank: bool,
     if_true: Template,
     if_false: Option<Template>,
 }
@@ -192,6 +212,10 @@ impl Renderable for Conditional {
         }
 
         Ok(())
+    }
+
+    fn is_blank(&self) -> bool {
+        self.is_blank
     }
 }
 
@@ -474,6 +498,9 @@ mod test {
             .blocks
             .register("unless".to_string(), UnlessBlock.into());
         options
+            .tags
+            .register("assign".to_string(), crate::stdlib::AssignTag.into());
+        options
     }
 
     #[test]
@@ -495,6 +522,49 @@ mod test {
         let runtime = RuntimeBuilder::new().build();
         let output = template.render(&runtime).unwrap();
         assert_eq!(output, "if false");
+    }
+
+    #[test]
+    fn if_remove_whitespaces() {
+        let text = r#"
+        {%- if 6 < 7  %}
+        	{% assign var = "A" %}
+        	{% assign var2 = "B" %}
+            {% if 5 < 7  %}
+                {% assign var = "A" %}
+                {% assign var2 = "B" %}
+            {% endif %}
+        {% endif -%}
+        "#;
+        let template = parser::parse(text, &options())
+            .map(runtime::Template::new)
+            .unwrap();
+
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime).unwrap();
+        assert_eq!(output, "");
+    }
+
+    #[test]
+    fn if_doesnt_remove_whitespaces() {
+        let text = r#"
+        {%- if 6 < 7  %}
+        	{% assign var = "A" %}
+        	{% assign var2 = "B" %}
+            {% if 5 < 7  %}
+                {% assign var = "A" %}
+                {% assign var2 = "B" %}
+            {% endif %}
+            {{"A"}}
+        {% endif -%}
+        "#;
+        let template = parser::parse(text, &options())
+            .map(runtime::Template::new)
+            .unwrap();
+
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime).unwrap();
+        assert_eq!(output, "\n        \t\n        \t\n            \n            A\n        ");
     }
 
     #[test]
@@ -577,6 +647,50 @@ mod test {
         runtime.set_global("some_value".into(), Value::scalar(42f64));
         let output = template.render(&runtime).unwrap();
         assert_eq!(output, "unless body");
+    }
+
+
+    #[test]
+    fn unless_remove_whitespaces() {
+        let text = r#"
+        {%- unless 6 > 7  %}
+        	{% assign var = "A" %}
+        	{% assign var2 = "B" %}
+            {% unless 5 > 7  %}
+                {% assign var = "A" %}
+                {% assign var2 = "B" %}
+            {% endunless %}
+        {% endunless -%}
+        "#;
+        let template = parser::parse(text, &options())
+            .map(runtime::Template::new)
+            .unwrap();
+
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime).unwrap();
+        assert_eq!(output, "");
+    }
+
+    #[test]
+    fn unless_doesnt_remove_whitespaces() {
+        let text = r#"
+        {%- unless 6 > 7  %}
+        	{% assign var = "A" %}
+        	{% assign var2 = "B" %}
+            {% unless 5 > 7  %}
+                {% assign var = "A" %}
+                {% assign var2 = "B" %}
+            {% endunless %}
+            {{"A"}}
+        {% endunless -%}
+        "#;
+        let template = parser::parse(text, &options())
+            .map(runtime::Template::new)
+            .unwrap();
+
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime).unwrap();
+        assert_eq!(output, "\n        \t\n        \t\n            \n            A\n        ");
     }
 
     #[test]

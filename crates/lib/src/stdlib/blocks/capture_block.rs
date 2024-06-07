@@ -87,6 +87,10 @@ impl Renderable for Capture {
         runtime.set_global(self.id.clone(), Value::scalar(output));
         Ok(())
     }
+
+    fn is_blank(&self) -> bool {
+        true
+    }
 }
 
 #[cfg(test)]

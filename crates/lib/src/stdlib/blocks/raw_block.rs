@@ -61,6 +61,11 @@ impl Renderable for RawT {
         write!(writer, "{}", self.content).replace("Failed to render")?;
         Ok(())
     }
+
+    fn is_blank(&self) -> bool {
+        self.content.find(|c: char| !c.is_whitespace()).is_none()
+    }
+
 }
 
 #[cfg(test)]

@@ -68,6 +68,10 @@ impl Renderable for Increment {
         runtime.set_index(self.id.clone(), Value::scalar(val));
         Ok(())
     }
+
+    fn is_blank(&self) -> bool {
+        true
+    }
 }
 
 #[derive(Copy, Clone, Debug, Default)]
@@ -129,6 +133,10 @@ impl Renderable for Decrement {
         write!(writer, "{}", val).replace("Failed to render")?;
         runtime.set_index(self.id.clone(), Value::scalar(val));
         Ok(())
+    }
+
+    fn is_blank(&self) -> bool {
+        true
     }
 }
 

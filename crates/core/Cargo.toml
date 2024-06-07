@@ -30,6 +30,8 @@ time = { version = "0.3", default-features = false, features = ["formatting", "m
 serde = { version = "1.0.157", features = ["derive"] }
 kstring = { version = "2.0", features = ["serde"] }
 liquid-derive = { version = "^0.26.8", path = "../derive", optional = true }
+rb_date_parser = {git = "https://github.com/blueshift-labs/rb_date_parser" }
+chrono = "0.4.38"
 
 [dev-dependencies]
 serde_yaml = "0.8"

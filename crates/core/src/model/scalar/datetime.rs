@@ -243,9 +243,32 @@ fn parse_date_time(s: &str) -> Option<DateTimeImpl> {
         let offset = if offset_re.is_match(s) { "" } else { " +0000" };
         let s = s.to_owned() + offset;
 
-        USER_FORMATS
-            .iter()
-            .find_map(|f| DateTimeImpl::parse(s.as_str(), f).ok())
+        let dt = rb_date_parser::date_parser::date_parse(s.as_str(), false);
+        if let Some(year) = dt.year {
+            let mut month = dt.mon.unwrap_or(1);
+            let mut day = dt.mday.unwrap_or(1);
+            if month > 12 {
+               std::mem::swap(&mut month, &mut day);
+            }
+            let date = time::Date::from_calendar_date(year, time::Month::try_from(month as u8).unwrap(), day as u8).unwrap();
+
+            let time = if let Some(hour) = dt.hour {
+                let min = dt.min.unwrap_or(0);
+                let sec = dt.sec.unwrap_or(0);
+                if let Some(nanos) = dt.sec_fraction {
+                    time::Time::from_hms_nano(hour as u8, min as u8, sec as u8, (nanos * 1000_000_000.0).trunc() as u32).unwrap()
+                } else {
+                    time::Time::from_hms(hour as u8, min as u8, sec as u8).unwrap()
+                }
+            } else {
+                time::Time::from_hms(0, 0, 0).unwrap()
+            };
+
+            let offset = time::UtcOffset::from_whole_seconds(dt.offset.unwrap_or_default()).unwrap();
+            Some(time::OffsetDateTime::new_in_offset(date, time, offset))
+        } else {
+            None
+        }
     }
 }
 

@@ -53,6 +53,10 @@ impl Renderable for Break {
             .set(Interrupt::Break);
         Ok(())
     }
+
+    fn is_blank(&self) -> bool {
+        false
+    }
 }
 
 #[derive(Copy, Clone, Debug, Default)]
@@ -100,6 +104,10 @@ impl Renderable for Continue {
             .get_mut::<InterruptRegister>()
             .set(Interrupt::Continue);
         Ok(())
+    }
+
+    fn is_blank(&self) -> bool {
+        false
     }
 }
 

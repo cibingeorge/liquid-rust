@@ -37,4 +37,8 @@ impl Renderable for Template {
         }
         Ok(())
     }
+
+    fn is_blank(&self) -> bool {
+        false
+    }
 }

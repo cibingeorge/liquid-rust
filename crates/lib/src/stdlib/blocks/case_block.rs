@@ -163,6 +163,11 @@ impl Renderable for Case {
 
         Ok(())
     }
+
+    fn is_blank(&self) -> bool {
+        false
+    }
+
 }
 
 #[derive(Debug)]

@@ -60,4 +60,8 @@ impl Renderable for FilterChain {
         write!(writer, "{}", entry.render()).replace("Failed to render")?;
         Ok(())
     }
+
+    fn is_blank(&self) -> bool {
+        false
+    }
 }

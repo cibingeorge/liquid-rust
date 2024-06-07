@@ -81,6 +81,10 @@ impl Renderable for IfChanged {
 
         Ok(())
     }
+
+    fn is_blank(&self) -> bool {
+        true
+    }
 }
 
 /// Remembers the content of the last rendered `ifstate` block.

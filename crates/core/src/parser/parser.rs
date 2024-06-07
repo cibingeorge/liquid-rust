@@ -664,7 +664,7 @@ impl<'a> InvalidLiquidToken<'a> {
         let invalid_token_position = invalid_token_span.start_pos();
         let (offset_l, offset_c) = invalid_token_position.line_col();
         let offset_l = offset_l - 1;
-        let offset_c = (0..offset_c)
+        let mut offset_c = (0..offset_c)
             .rev()
             .find(|i| invalid_token_position.line_of().is_char_boundary(*i))
             .unwrap_or(0);
@@ -1281,6 +1281,10 @@ mod test {
                     write!(writer, "</pre>").replace("Failed to render")?;
 
                     Ok(())
+                }
+
+                fn is_blank(&self) -> bool {
+                    false
                 }
             }
 

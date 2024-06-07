@@ -128,6 +128,11 @@ impl Renderable for Cycle {
         write!(writer, "{}", value.render()).replace("Failed to render")?;
         Ok(())
     }
+
+    fn is_blank(&self) -> bool {
+        false
+    }
+
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]

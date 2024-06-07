@@ -121,6 +121,11 @@ impl Renderable for Include {
 
         Ok(())
     }
+
+    fn is_blank(&self) -> bool {
+        false
+    }
+
 }
 
 #[cfg(test)]
