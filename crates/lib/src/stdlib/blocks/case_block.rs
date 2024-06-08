@@ -35,6 +35,13 @@ impl BlockReflection for CaseBlock {
     }
 }
 
+
+#[derive(Debug)]
+struct CaseOptionData {
+    condition: Vec<Expression>,
+    elements: Vec<Box<dyn Renderable>>,
+}
+
 impl ParseBlock for CaseBlock {
     fn parse(
         &self,
@@ -51,16 +58,19 @@ impl ParseBlock for CaseBlock {
         arguments.expect_nothing()?;
 
         let mut cases = Vec::new();
+        let mut cases_data = Vec::new();
         let mut else_block = None;
         let mut current_block = Vec::new();
         let mut current_condition = None;
+        let mut is_blank = true;
 
         while let Some(element) = tokens.next()? {
             match element {
                 BlockElement::Tag(mut tag) => match tag.name() {
                     "when" => {
                         if let Some(condition) = current_condition {
-                            cases.push(CaseOption::new(condition, Template::new(current_block)));
+                            is_blank &= current_block.iter().all(|x: &Box<dyn Renderable>| x.is_blank());
+                            cases_data.push(CaseOptionData{condition, elements: current_block});
                         }
                         current_block = Vec::new();
                         current_condition = Some(parse_condition(tag.tokens())?);
@@ -78,14 +88,33 @@ impl ParseBlock for CaseBlock {
         }
 
         if let Some(condition) = current_condition {
-            cases.push(CaseOption::new(condition, Template::new(current_block)));
+            is_blank &= current_block.iter().all(|x: &Box<dyn Renderable>| x.is_blank());
+            cases_data.push(CaseOptionData{condition, elements: current_block});
         }
 
+        if let Some(else_blk) = &else_block {
+            is_blank &= else_blk.iter().all(|x| x.is_blank());
+        };
+
+
+        // Now filter out the else and cases if is_blank is true
+        for data in cases_data {
+            let elements = if is_blank {
+                data.elements.into_iter().filter(|x| !x.is_text()).collect()
+            } else {
+                data.elements
+            };
+            cases.push(CaseOption::new(data.condition, Template::new(elements)));
+        }
+        if is_blank {
+            else_block = else_block.map(|x| x.into_iter().filter(|x| !x.is_text()).collect());
+        }
         let else_block = else_block.map(Template::new);
 
         tokens.assert_empty();
         Ok(Box::new(Case {
             target,
+            is_blank,
             cases,
             else_block,
         }))
@@ -126,6 +155,7 @@ fn parse_condition(arguments: &mut TagTokenIter<'_>) -> Result<Vec<Expression>> 
 
 #[derive(Debug)]
 struct Case {
+    is_blank: bool,
     target: Expression,
     cases: Vec<CaseOption>,
     else_block: Option<Template>,
@@ -165,7 +195,7 @@ impl Renderable for Case {
     }
 
     fn is_blank(&self) -> bool {
-        false
+        self.is_blank
     }
 
 }
@@ -210,6 +240,9 @@ mod test {
         options
             .blocks
             .register("case".to_string(), CaseBlock.into());
+        options
+            .tags
+            .register("assign".to_string(), crate::stdlib::AssignTag.into());
         options
     }
 
@@ -280,4 +313,118 @@ mod test {
         let template = parser::parse(text, &options).map(runtime::Template::new);
         assert!(template.is_err());
     }
+
+
+    #[test]
+    fn remove_whitespaces() {
+        let text = r#"
+			{%- case x %}
+			{% when 1 %}
+				{% assign var=1 %}
+            {% when 2 %}
+                {% assign var=2 %}
+            {% when 3 %}
+                {% assign var=3 %}
+            {% when 4 %}
+                {% assign var=4 %}
+            {% when 5 %}
+				{% assign var=5 %}
+            {% else %}
+             	{% assign var=0 %}
+            {% endcase -%}
+        "#;
+        let options = options();
+        let template = parser::parse(text, &options).map(runtime::Template::new).unwrap();
+
+        let runtime = RuntimeBuilder::new().build();
+        runtime.set_global("x".into(), Value::scalar(1));
+        assert_eq!(template.render(&runtime).unwrap(), "");
+
+        let text = r#"
+			{%- case x %}
+			{% when 1 %}
+				{% case y %}
+				{% when 1 %}
+					{% assign var=1 %}
+				{% when 2 %}
+					{% assign var=2 %}
+				{% endcase %}
+            {% when 2 %}
+                {% assign var=2 %}
+            {% when 3 %}
+                {% assign var=3 %}
+            {% when 4 %}
+                {% assign var=4 %}
+            {% when 5 %}
+				{% assign var=5 %}
+            {% else %}
+             	{% assign var=0 %}
+            {% endcase -%}
+        "#;
+        let template = parser::parse(text, &options).map(runtime::Template::new).unwrap();
+
+        let runtime = RuntimeBuilder::new().build();
+        runtime.set_global("x".into(), Value::scalar(1));
+		runtime.set_global("y".into(), Value::scalar(1));
+        assert_eq!(template.render(&runtime).unwrap(), "");
+    }
+
+
+    #[test]
+    fn will_not_remove_whitespaces() {
+        let text = r#"
+			{%- case x %}
+			{% when 1 %}
+				{% assign var=1 %}
+            {% when 2 %}
+                {% assign var=2 %}
+            {% when 3 %}
+                {% assign var=3 %}
+				single nonempty section
+            {% when 4 %}
+                {% assign var=4 %}
+            {% when 5 %}
+				{% assign var=5 %}
+            {% else %}
+             	{% assign var=0 %}
+            {% endcase -%}
+        "#;
+        let options = options();
+        let template = parser::parse(text, &options).map(runtime::Template::new).unwrap();
+
+        let runtime = RuntimeBuilder::new().build();
+        runtime.set_global("x".into(), Value::scalar(1));
+        assert_ne!(template.render(&runtime).unwrap(), "");
+
+        let text = r#"
+			{%- case x %}
+			{% when 1 %}
+				{% case y %}
+				{% when 1 %}
+					{% assign var=1 %}
+				{% when 2 %}
+					{% assign var=2 %}
+				{% else %}
+					single nonempty section
+				{% endcase %}
+            {% when 2 %}
+                {% assign var=2 %}
+            {% when 3 %}
+                {% assign var=3 %}
+            {% when 4 %}
+                {% assign var=4 %}
+            {% when 5 %}
+				{% assign var=5 %}
+            {% else %}
+             	{% assign var=0 %}
+            {% endcase -%}
+        "#;
+        let template = parser::parse(text, &options).map(runtime::Template::new).unwrap();
+
+        let runtime = RuntimeBuilder::new().build();
+        runtime.set_global("x".into(), Value::scalar(1));
+		runtime.set_global("y".into(), Value::scalar(1));
+        assert_ne!(template.render(&runtime).unwrap(), "");
+    }
+
 }
