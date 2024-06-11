@@ -330,6 +330,13 @@ impl Registers {
             registers.entry::<T>().or_default()
         })
     }
+
+    /// Getter for clonable data stored.
+    pub fn get<T: std::any::Any + Clone + Default>(&self) -> Option<T> {
+        let registers: std::cell::Ref<anymap2::Map> = self.registers.borrow();
+        let x = registers.get::<T>();
+        x.map(|a| a.clone())
+    }
 }
 
 impl Default for Registers {

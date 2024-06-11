@@ -90,6 +90,7 @@ impl serde::Serializer for ScalarSerializer {
 
     #[inline]
     fn serialize_f64(self, value: f64) -> Result<Scalar, SerError> {
+        println!("Called serialize_f64 value={}", value);
         Ok(Scalar::new(value))
     }
 

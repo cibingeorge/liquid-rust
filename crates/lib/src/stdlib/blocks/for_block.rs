@@ -179,8 +179,9 @@ impl Renderable for For {
         let array = range.evaluate()?;
         let limit = evaluate_attr(&self.limit, runtime)?;
         let offset = evaluate_attr(&self.offset, runtime)?.unwrap_or(0);
+        println!("limit={:?} offset={} array={:?}", limit, offset, array);
         let array = iter_array(array, limit, offset, self.reversed);
-
+        println!("limit={:?} offset={} array={:?}", limit, offset, array);
         match array.len() {
             0 => {
                 if let Some(ref t) = self.else_template {
@@ -627,7 +628,7 @@ fn iter_array(
         .map(|l| ::std::cmp::min(l, range.len()))
         .unwrap_or_else(|| range.len() - offset);
     range.drain(0..offset);
-    range.resize(limit, Value::Nil.into());
+    range.truncate(limit);
 
     if reversed {
         range.reverse();
@@ -683,9 +684,9 @@ mod test {
         runtime.set_global(
             "array".into(),
             Value::Array(vec![
-                Value::scalar(22f64),
-                Value::scalar(23f64),
-                Value::scalar(24f64),
+                Value::scalar(22i64),
+                Value::scalar(23i64),
+                Value::scalar(24i64),
                 Value::scalar("wat".to_owned()),
             ]),
         );
@@ -852,6 +853,36 @@ mod test {
         let runtime = RuntimeBuilder::new().build();
         let output = template.render(&runtime).unwrap();
         assert_eq!(output, "5 6 ");
+    }
+
+    #[test]
+    fn offset_outside_loop() {
+        let text = concat!(
+            "{% for i in (1..5) offset: 5 limit: 3 %}",
+            "{{ i }} ",
+            "{% endfor %}"
+        );
+        let template = parser::parse(text, &options())
+            .map(runtime::Template::new)
+            .unwrap();
+
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime).unwrap();
+        assert_eq!(output, "");
+
+
+        let text = concat!(
+            "{% for i in (1..5) offset: 3 limit: 3 %}",
+            "{{ i }} ",
+            "{% endfor %}"
+        );
+        let template = parser::parse(text, &options())
+            .map(runtime::Template::new)
+            .unwrap();
+
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime).unwrap();
+        assert_eq!(output, "4 5 ");
     }
 
     #[test]
@@ -1043,9 +1074,9 @@ mod test {
         runtime.set_global(
             "array".into(),
             Value::Array(vec![
-                Value::scalar(22f64),
-                Value::scalar(23f64),
-                Value::scalar(24f64),
+                Value::scalar(22i64),
+                Value::scalar(23i64),
+                Value::scalar(24i64),
                 Value::scalar("wat".to_owned()),
             ]),
         );

@@ -9,8 +9,8 @@ use liquid_core::runtime::RenderingMode;
 
 #[derive(Debug)]
 pub struct Template {
-    pub(crate) template: runtime::Template,
-    pub(crate) partials: Option<sync::Arc<dyn PartialStore + Send + Sync>>,
+    pub template: runtime::Template,
+    pub partials: Option<sync::Arc<dyn PartialStore + Send + Sync>>,
 }
 
 impl Template {
