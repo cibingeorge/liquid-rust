@@ -266,6 +266,7 @@ impl Filter for TimesFilter {
             .as_scalar()
             .ok_or_else(|| invalid_argument("operand", "Number expected"))?;
 
+        println!("TimesFilter input={:?} operand={:?}", input, operand);
         let result = input
             .to_integer()
             .and_then(|i| operand.to_integer().map(|o| Value::scalar(i * o)))

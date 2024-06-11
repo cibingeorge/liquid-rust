@@ -6,6 +6,7 @@ mod date;
 mod datetime;
 pub(crate) mod ser;
 
+use core::panic;
 use std::cmp::Ordering;
 use std::{borrow::Cow, fmt};
 
@@ -317,13 +318,28 @@ impl_copyable!(i16, i64);
 impl_copyable!(u32, i64);
 impl_copyable!(i32, i64);
 
+
+struct FormattedFloat(f64);
+
+impl fmt::Display for FormattedFloat {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut strf = self.0.to_string();
+        if !strf.contains('.') {
+            strf.push_str(".0");
+        }
+        println!("render FormattedFloat x={} formatted={}", self.0, strf);
+        strf.fmt(f)
+    }
+}
+
 impl ValueView for f64 {
     fn as_debug(&self) -> &dyn fmt::Debug {
         self
     }
 
     fn render(&self) -> DisplayCow<'_> {
-        DisplayCow::Borrowed(self)
+        println!("render float x={}", self);
+        DisplayCow::Owned(Box::new(FormattedFloat(*self)))
     }
     fn source(&self) -> DisplayCow<'_> {
         DisplayCow::Borrowed(self)
@@ -341,7 +357,9 @@ impl ValueView for f64 {
     }
 
     fn to_kstr(&self) -> KStringCow<'_> {
-        self.render().to_string().into()
+        let s = self.render().to_string();
+        println!("to_kstr float x={} s={}", self, s);
+        s.into()
     }
     fn to_value(&self) -> Value {
         Value::scalar(*self)
