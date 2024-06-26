@@ -102,6 +102,16 @@ impl ParseBlock for ForBlock {
             }
         }
 
+        let mut is_blank = item_template.iter().all(|x| x.is_blank());
+        if let Some(else_blk) = &else_template {
+            is_blank &= else_blk.iter().all(|x| x.is_blank());
+        };
+
+        if is_blank {
+            item_template = item_template.into_iter().filter(|x| !x.is_text()).collect();
+            else_template = else_template.map(|x| x.into_iter().filter(|x| !x.is_text()).collect());
+        }
+
         let item_template = Template::new(item_template);
         let else_template = else_template.map(Template::new);
 
@@ -111,6 +121,7 @@ impl ParseBlock for ForBlock {
             range,
             item_template,
             else_template,
+            is_blank,
             limit,
             offset,
             reversed,
@@ -128,6 +139,7 @@ struct For {
     range: RangeExpression,
     item_template: Template,
     else_template: Option<Template>,
+    is_blank: bool,
     limit: Option<Expression>,
     offset: Option<Expression>,
     reversed: bool,
@@ -179,9 +191,8 @@ impl Renderable for For {
         let array = range.evaluate()?;
         let limit = evaluate_attr(&self.limit, runtime)?;
         let offset = evaluate_attr(&self.offset, runtime)?.unwrap_or(0);
-        println!("limit={:?} offset={} array={:?}", limit, offset, array);
         let array = iter_array(array, limit, offset, self.reversed);
-        println!("limit={:?} offset={} array={:?}", limit, offset, array);
+
         match array.len() {
             0 => {
                 if let Some(ref t) = self.else_template {
@@ -226,7 +237,7 @@ impl Renderable for For {
     }
 
     fn is_blank(&self) -> bool {
-        false
+        self.is_blank
     }
 }
 

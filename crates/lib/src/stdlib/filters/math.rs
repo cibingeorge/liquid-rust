@@ -266,7 +266,7 @@ impl Filter for TimesFilter {
             .as_scalar()
             .ok_or_else(|| invalid_argument("operand", "Number expected"))?;
 
-        println!("TimesFilter input={:?} operand={:?}", input, operand);
+        //println!("TimesFilter input={:?} input.to_integer={:?} operand={:?}", input, input.to_integer(), operand.to_integer());
         let result = input
             .to_integer()
             .and_then(|i| operand.to_integer().map(|o| Value::scalar(i * o)))
@@ -276,6 +276,8 @@ impl Filter for TimesFilter {
                     .and_then(|i| operand.to_float().map(|o| Value::scalar(i * o)))
             })
             .ok_or_else(|| invalid_argument("operand", "Number expected"))?;
+
+            //println!("TimesFilter input={:?} operand={:?} result={:?}", input, operand, result);
 
         Ok(result)
     }
@@ -328,7 +330,10 @@ impl Filter for DividedByFilter {
 
         let result = input
             .to_integer()
-            .and_then(|i| operand.to_integer().map(|o| Value::scalar(i / o)))
+            .and_then(|i| operand.to_integer().map(|o| {
+                let div: f64 = (i as f64 / o as f64).floor();
+                Value::scalar(div as i64)
+            }))
             .or_else(|| {
                 input
                     .to_float()
@@ -431,21 +436,28 @@ impl Filter for RoundFilter {
         let n = args.decimal_places.unwrap_or(0);
 
         let input = input
-            .as_scalar()
-            .and_then(|s| s.to_float())
-            .ok_or_else(|| invalid_input("Number expected"))?;
-
-        match n.cmp(&0) {
-            std::cmp::Ordering::Equal => Ok(Value::scalar(input.round() as i64)),
-            std::cmp::Ordering::Less => Ok(Value::scalar(input.round() as i64)),
-            _ => {
-                let multiplier = 10.0_f64.powi(
-                    n.try_into()
-                        .map_err(|_| invalid_input("decimal-places was too large"))?,
-                );
-                Ok(Value::scalar((input * multiplier).round() / multiplier))
+            .as_scalar();
+        if let Some(maybe_int) = &input{
+            if let Some(integer) = maybe_int.to_integer() {
+                return Ok(Value::scalar(integer));
+            }
+            if let Some(float) = maybe_int.to_float() {
+                let res = match n.cmp(&0) {
+                    std::cmp::Ordering::Equal => Ok(Value::scalar(float.round() as i64)),
+                    std::cmp::Ordering::Less => Ok(Value::scalar(float.round() as i64)),
+                    _ => {
+                        let multiplier = 10.0_f64.powi(
+                            n.try_into()
+                                .map_err(|_| invalid_input("decimal-places was too large"))?,
+                        );
+                        Ok(Value::scalar((float * multiplier).round() / multiplier))
+                    }
+                };
+                return res;
             }
         }
+        return Err(invalid_input("Number expected"));
+
     }
 }
 

@@ -1,5 +1,5 @@
 use std::fmt;
-use std::io::Write;
+use std::io::{BufWriter, Write};
 
 use liquid_core::error::ResultLiquidExt;
 use liquid_core::model::{ValueView, ValueViewCmp};
@@ -154,6 +154,7 @@ impl ParseBlock for UnlessBlock {
         };
 
         if is_blank {
+            //println!("Isblank =true");
             if_true = if_true.into_iter().filter(|x| !x.is_text()).collect();
             if_false = if_false.map(|x| x.into_iter().filter(|x| !x.is_text()).collect());
         }
@@ -201,10 +202,24 @@ impl Renderable for Conditional {
     fn render_to(&self, writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
         let condition = self.compare(runtime).trace_with(|| self.trace().into())?;
         if condition {
+            // let mut data = String::new();
+            // {
+            // let mut res = unsafe { BufWriter::new(data.as_mut_vec()) };
+            // self.if_true.render_to(&mut res, runtime);
+            // }
+
+            // std::io::stdout().write_all(&format!("Template={:?} \nThen = {:?}\n", self.if_true, data).as_bytes());
             self.if_true
                 .render_to(writer, runtime)
                 .trace_with(|| self.trace().into())?;
         } else if let Some(ref template) = self.if_false {
+            // let mut data = String::new();
+            // {
+            // let mut res = unsafe { BufWriter::new(data.as_mut_vec()) };
+            // template.render_to(&mut res, runtime);
+            // }
+            // std::io::stdout().write_all(&format!("Template={:?} \nElse = {:?}\n", template, data).as_bytes());
+
             template
                 .render_to(writer, runtime)
                 .trace("{{% else %}}")
@@ -229,26 +244,34 @@ enum Condition {
 
 impl Condition {
     pub fn evaluate(&self, runtime: &dyn Runtime) -> Result<bool> {
-        match *self {
+
+        let res = match *self {
             Condition::Binary(ref c) => c.evaluate(runtime),
             Condition::Existence(ref c) => c.evaluate(runtime),
             Condition::Conjunction(ref left, ref right) => {
-                Ok(left.evaluate(runtime)? && right.evaluate(runtime)?)
+                let rt = right.evaluate(runtime)?;
+                let lt = left.evaluate(runtime)?;
+                Ok(rt && lt)
             }
             Condition::Disjunction(ref left, ref right) => {
-                Ok(left.evaluate(runtime)? || right.evaluate(runtime)?)
+                let rt = right.evaluate(runtime)?;
+                let lt = left.evaluate(runtime)?;
+                Ok(rt || lt)
             }
-        }
+        };
+
+        //std::io::stdout().write_all(&format!("Evaluate self={} res={:?}\n", self, res).as_bytes());
+        res
     }
 }
 
 impl fmt::Display for Condition {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
-            Condition::Binary(ref c) => write!(f, "{}", c),
-            Condition::Existence(ref c) => write!(f, "{}", c),
-            Condition::Conjunction(ref left, ref right) => write!(f, "{} and {}", left, right),
-            Condition::Disjunction(ref left, ref right) => write!(f, "{} or {}", left, right),
+            Condition::Binary(ref c) => write!(f, "({})", c),
+            Condition::Existence(ref c) => write!(f, "({})", c),
+            Condition::Conjunction(ref left, ref right) => write!(f, "({} and {})", left, right),
+            Condition::Disjunction(ref left, ref right) => write!(f, "({} or {})", left, right),
         }
     }
 }
@@ -267,6 +290,7 @@ impl BinaryCondition {
         let b = self.rh.evaluate(runtime)?;
         let cb = ValueViewCmp::new(b.as_view());
 
+        //println!("Binary condition left=a={:?} ca={:?} right=b={:?} cb={:?}", a, ca, b, cb);
         let result = match self.comparison {
             ComparisonOperator::Equals => ca == cb,
             ComparisonOperator::NotEquals => ca != cb,
@@ -276,7 +300,7 @@ impl BinaryCondition {
             ComparisonOperator::GreaterThanEquals => ca >= cb,
             ComparisonOperator::Contains => contains_check(a.as_view(), b.as_view())?,
         };
-
+        //std::io::stdout().write_all(&format!("BinaryCondition Evaluate self={} result={:?}\n", self, result).as_bytes());
         Ok(result)
     }
 }
@@ -437,13 +461,15 @@ fn parse_atom_condition(arguments: &mut PeekableTagTokenIter<'_>) -> Result<Cond
 fn parse_conjunction_chain(arguments: &mut PeekableTagTokenIter<'_>) -> Result<Condition> {
     let mut lh = parse_atom_condition(arguments)?;
 
-    while let Some(val) = arguments.peek().map(TagToken::as_str).map(|f| f.to_ascii_lowercase()) {
+    if let Some(val) = arguments.peek().map(TagToken::as_str).map(|f| f.to_ascii_lowercase()) {
         if val.as_str() == "and" {
             arguments.next();
-            let rh = parse_atom_condition(arguments)?;
-            lh = Condition::Conjunction(Box::new(lh), Box::new(rh));
-        } else {
-            break;
+            let rh = parse_conjunction_chain(arguments)?;
+            lh = Condition::Conjunction(Box::new(rh), Box::new(lh));
+        } else if val.as_str() == "or" {
+            arguments.next();
+            let rh = parse_conjunction_chain(arguments)?;
+            lh = Condition::Disjunction(Box::new(rh), Box::new(lh));
         }
     }
 
@@ -457,15 +483,16 @@ fn parse_condition(arguments: TagTokenIter<'_>) -> Result<Condition> {
         peeked: None,
     };
     let mut lh = parse_conjunction_chain(&mut arguments)?;
+    //std::io::stdout().write_all(&format!("Parsed condition={} \n", lh).as_bytes());
 
-    while let Some(token) = arguments.next() {
-        token
-            .expect_case_insensitive_str("or")
-            .into_result_custom_msg("\"and\" or \"or\" expected.")?;
+    // while let Some(token) = arguments.next() {
+    //     token
+    //         .expect_case_insensitive_str("or")
+    //         .into_result_custom_msg("\"and\" or \"or\" expected.")?;
 
-        let rh = parse_conjunction_chain(&mut arguments)?;
-        lh = Condition::Disjunction(Box::new(lh), Box::new(rh));
-    }
+    //     let rh = parse_conjunction_chain(&mut arguments)?;
+    //     lh = Condition::Disjunction(Box::new(lh), Box::new(rh));
+    // }
 
     Ok(lh)
 }

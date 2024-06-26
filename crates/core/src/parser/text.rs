@@ -24,7 +24,7 @@ impl Renderable for Text {
     }
 
     fn is_blank(&self) -> bool {
-        self.text.find(|c: char| !c.is_whitespace()).is_none()
+        self.text.find(|c: char| !c.is_ascii_whitespace()).is_none()
     }
 
     fn is_text(&self) -> bool {

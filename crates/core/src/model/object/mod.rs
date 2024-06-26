@@ -13,6 +13,8 @@ use crate::model::value::DisplayCow;
 use crate::model::State;
 use crate::model::{Value, ValueView};
 
+use itertools::Itertools;
+use itertools::Position;
 pub use map::Object;
 pub use ser::to_object;
 
@@ -91,7 +93,7 @@ impl ObjectView for Object {
     }
 
     fn iter<'k>(&'k self) -> Box<dyn Iterator<Item = (KStringCow<'k>, &'k dyn ValueView)> + 'k> {
-        let i = Object::iter(self).map(|(k, v)| (k.as_str().into(), v.as_view()));
+        let i = Object::iter(self).sorted_by_key(|x| x.0.as_str()).map(|(k, v)| (k.as_str().into(), v.as_view()));
         Box::new(i)
     }
 
@@ -327,9 +329,17 @@ impl<'s, O: ObjectView> ObjectSource<'s, O> {
 
 impl<'s, O: ObjectView> fmt::Display for ObjectSource<'s, O> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{{")?;
-        for (k, v) in self.s.iter() {
+        write!(f, "{{ObjectSource")?;
+        for (pos, (k, v)) in self.s.iter().with_position() {
+            if pos == Position::First {
+                write!(f, "{{")?;
+            }
             write!(f, r#""{}": {}, "#, k, v.render())?;
+            if !(pos == Position::Last || pos == Position::Only) {
+                write!(f, "}}")?;
+            } else {
+                write!(f, ",")?;
+            }
         }
         write!(f, "}}")?;
         Ok(())
@@ -342,6 +352,7 @@ pub struct ObjectRender<'s, O: ObjectView> {
     s: &'s O,
 }
 
+
 impl<'s, O: ObjectView> ObjectRender<'s, O> {
     #[doc(hidden)]
     pub fn new(other: &'s O) -> Self {
@@ -351,11 +362,40 @@ impl<'s, O: ObjectView> ObjectRender<'s, O> {
 
 impl<'s, O: ObjectView> fmt::Display for ObjectRender<'s, O> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for (k, v) in self.s.iter() {
-            write!(f, "{}{}", k, v.render())?;
+        //let json_str = serde_json::to_string(&self.s.to_value()).unwrap();
+        write!(f, "{{")?;
+        //println!("{{");
+        // match ruby formatting
+        for (pos, (k, v)) in self.s.iter().with_position() {
+            let v_val = &v.to_value();
+            // println!("Val = {:?} v.to_value={:?}", v, &v_val[0..200]);
+            if v_val.is_array() || v_val.is_object() {
+                let val_rendered = v.render();
+                write!(f, "\"{}\"=>{}", k, val_rendered)?;
+                let mut strng = val_rendered.to_string();
+                if strng.len() > 100 {
+                    strng = format!("{}..{}", &strng[0..50], &strng[(strng.len() - 10)..]);
+                }
+                //println!("Array or Obj\"{}\"=>{}", k, strng);
+            } else if v_val.is_nil() {
+                //println!("\"{}\"=>nil", k);
+                write!(f, "\"{}\"=>nil", k)?;
+            } else {
+                let val_json = serde_json::to_string(v_val).unwrap();
+                //println!("\"{}\"=>{}", k, val_json);
+                write!(f, "\"{}\"=>{}", k, val_json)?;
+            }
+
+            //println!("pos={:?}", pos);
+            if !(pos == Position::Last || pos == Position::Only) {
+                //println!("{}", ",");
+                write!(f, ", ")?;
+            }
         }
+        write!(f, "}}")?;
         Ok(())
     }
+
 }
 
 #[cfg(test)]

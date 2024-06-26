@@ -292,23 +292,26 @@ pub(crate) fn value_eq(lhs: &dyn ValueView, rhs: &dyn ValueView) -> bool {
         return lhs.query_state(state);
     }
 
+    //println!("View.rs value_eq lhs={:?} rhs={:?}", lhs.as_scalar(), rhs.as_scalar());
     match (lhs.as_scalar(), rhs.as_scalar()) {
         (Some(x), Some(y)) => return x == y,
         (None, None) => (),
         // encode Ruby truthiness: all values except false and nil are true
-        (Some(x), _) => {
-            if rhs.is_nil() {
-                return !x.to_bool().unwrap_or(true);
-            } else {
-                return x.to_bool().unwrap_or(false);
-            }
+        (Some(_x), _) => {
+            ()
+            // if rhs.is_nil() {
+            //     return !x.to_bool().unwrap_or(true);
+            // } else {
+            //     return x.to_bool().unwrap_or(false);
+            // }
         }
-        (_, Some(x)) => {
-            if lhs.is_nil() {
-                return !x.to_bool().unwrap_or(true);
-            } else {
-                return x.to_bool().unwrap_or(false);
-            }
+        (_, Some(_x)) => {
+            ()
+            // if lhs.is_nil() {
+            //     return !x.to_bool().unwrap_or(true);
+            // } else {
+            //     return x.to_bool().unwrap_or(false);
+            // }
         }
     }
 

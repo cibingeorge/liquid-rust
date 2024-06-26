@@ -92,9 +92,7 @@ macro_rules! assert_template_matches {
         let rendered = template.render(&$assigns).unwrap();
 
         let expected = $expected;
-        println!("pattern={}", expected);
         let expected = regex::Regex::new(expected).unwrap();
-        println!("rendered={}", rendered);
         assert!(expected.is_match(&rendered));
     };
 }

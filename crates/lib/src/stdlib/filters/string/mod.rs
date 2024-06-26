@@ -49,6 +49,7 @@ impl Filter for SplitFilter {
             Ok(Value::Array(
                 input
                     .split(args.pattern.as_str())
+                    .filter(|x| !x.is_empty())
                     .map(|s| Value::scalar(s.to_owned()))
                     .collect(),
             ))

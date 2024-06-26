@@ -7,6 +7,7 @@ use std::hash::Hash;
 use std::iter::FromIterator;
 use std::ops;
 
+use itertools::Itertools;
 use serde::{de, ser};
 
 use super::Value;
@@ -237,7 +238,7 @@ impl ser::Serialize for Object {
     {
         use serde::ser::SerializeMap;
         let mut map = serializer.serialize_map(Some(self.len()))?;
-        for (k, v) in self {
+        for (k, v) in self.iter().sorted_by_key(|x| x.0.as_str()) {
             map.serialize_key(k)?;
             map.serialize_value(v)?;
         }

@@ -31,12 +31,15 @@ struct DateFilter {
 impl Filter for DateFilter {
     fn evaluate(&self, input: &dyn ValueView, runtime: &dyn Runtime) -> Result<Value> {
         let args = self.args.evaluate(runtime)?;
+        //println!("Date filter input={:?} args={:?}", input, self.args);
 
         let date = input.as_scalar().and_then(|s| {
             s.to_date_time()});
-        match date {
+        //println!("Date filter date={:?}", date);
+        let res = match date {
             Some(date) if !args.format.is_empty() => {
                 let s = date.format(args.format.as_str()).map_err(|_err| {
+                    //println!("Date error={:?} a", _err);
                     Error::with_msg(format!("Invalid date-format string: {}", args.format))
                 })?;
 
@@ -45,7 +48,10 @@ impl Filter for DateFilter {
             _ => {
                 Ok(input.to_value())
             },
-        }
+        };
+        //println!("Date output={:?} input={:?}\n", res, input);
+        res
+
     }
 }
 
@@ -109,6 +115,11 @@ mod tests {
     #[test]
     fn unit_date_missing_format() {
         liquid_core::call_filter!(Date, "13 Jun 2016 02:30:00 +0300").unwrap_err();
+    }
+
+    #[test]
+    fn unit_date_unix() {
+        liquid_core::call_filter!(Date, "1710216000").unwrap_err();
     }
 
     #[test]
