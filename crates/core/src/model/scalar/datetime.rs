@@ -3,6 +3,11 @@ use std::fmt;
 use std::ops;
 
 mod strftime;
+use chrono::Timelike;
+use chrono::Datelike;
+use chrono_tz::OffsetComponents;
+use time::UtcOffset;
+use chrono::TimeZone;
 
 use super::Date;
 
@@ -23,8 +28,8 @@ impl DateTime {
     /// Create a `DateTime` from the current moment.
     pub fn now() -> Self {
         Self {
-            inner: DateTimeImpl::now_utc(),
-        }
+            //inner: DateTimeImpl::now_local().unwrap_or_else(|_| DateTimeImpl::now_utc()),
+            inner: DateTimeImpl::now_utc(),        }
     }
 
     /// Makes a new NaiveDate from the calendar date (year, month and day).
@@ -44,10 +49,52 @@ impl DateTime {
         }
     }
 
+    /// Makes a new NaiveDate from the calendar date (year, month and day) at specific offset.
+    ///
+    /// Panics on the out-of-range date, invalid month and/or day.
+    pub fn from_date(date: &Date) -> Option<Self> {
+        let tz = rb_date_parser::get_current_timezone();
+        let local_time = tz.with_ymd_and_hms(date.year().into(), date.month().into(), date.day().into(), 0, 0, 0).earliest();
+        let offset = local_time
+            .and_then(|x| Some(x.fixed_offset().offset().local_minus_utc()))
+            .and_then(|offset_in_sec| time::UtcOffset::from_whole_seconds(offset_in_sec).ok());
+
+        if offset.is_none() {
+            return None;
+        }
+        let offset = offset.unwrap();
+
+        let month = date.month().try_into().expect("the month is out of range");
+        time::Date::from_calendar_date(
+            date.year(),
+            month,
+            date.day(),
+        ).and_then(|dt| {
+            dt.with_hms(0, 0, 0)
+        })
+        .and_then(|dt| {
+            Ok(Self { inner: dt.assume_offset(offset)})
+        }).ok()
+    }
+
     /// Convert a `str` to `Self`
     #[allow(clippy::should_implement_trait)]
     pub fn from_str(other: &str) -> Option<Self> {
         parse_date_time(other).map(|d| Self { inner: d })
+    }
+
+    /// Convert a number to `Self`
+    pub fn from_unix_timestamp(ts: i64) -> Option<Self> {
+        let res = DateTimeImpl::from_unix_timestamp(ts).map(|d| {
+            let tz = rb_date_parser::get_current_timezone();
+            let local_time = tz.timestamp_opt(ts, 0).earliest().unwrap();
+            let offset_in_sec = local_time.fixed_offset().offset().local_minus_utc();
+
+            let offset = UtcOffset::from_whole_seconds(offset_in_sec).unwrap();
+            Self{inner: d.to_offset(offset)}
+        }).ok();
+        //println!("from_unix_timestamp {:?}", res);
+        res
     }
 
     /// Replace date with `other`.
@@ -222,54 +269,62 @@ mod friendly_date_time {
 /// * `dow_mon` format with an offset: "Tue Feb 16 10:00:00 2016 +0100"
 fn parse_date_time(s: &str) -> Option<DateTimeImpl> {
     use regex::Regex;
-    use time::macros::format_description;
-
-    const USER_FORMATS: &[&[time::format_description::FormatItem<'_>]] = &[
-        DATE_TIME_FORMAT,
-        DATE_TIME_FORMAT_SUBSEC,
-        format_description!("[day] [month repr:long] [year] [hour]:[minute]:[second] [offset_hour sign:mandatory][offset_minute]"),
-        format_description!("[day] [month repr:short] [year] [hour]:[minute]:[second] [offset_hour sign:mandatory][offset_minute]"),
-        format_description!("[month]/[day]/[year] [hour]:[minute]:[second] [offset_hour sign:mandatory][offset_minute]"),
-        format_description!("[weekday repr:short] [month repr:short] [day padding:none] [hour]:[minute]:[second] [year] [offset_hour sign:mandatory][offset_minute]"),
-    ];
 
     if s.is_empty() {
-        None
-    } else if let "now" | "today" = s.to_lowercase().trim() {
-        Some(DateTimeImpl::now_utc())
-    } else {
-        let offset_re = Regex::new(r"[+-][01][0-9]{3}$").unwrap();
+        return None
+    }
 
-        let offset = if offset_re.is_match(s) { "" } else { " +0000" };
-        let s = s.to_owned() + offset;
+    if let "now" | "today" = s.to_lowercase().trim() {
+        let offset_in_sec = chrono::Local::now()
+            .offset()
+            .local_minus_utc();
+        let offset = UtcOffset::from_whole_seconds(offset_in_sec).unwrap();
 
-        let dt = rb_date_parser::date_parser::date_parse(s.as_str(), false);
-        if let Some(year) = dt.year {
-            let mut month = dt.mon.unwrap_or(1);
-            let mut day = dt.mday.unwrap_or(1);
-            if month > 12 {
-               std::mem::swap(&mut month, &mut day);
+        let utc_now = DateTimeImpl::now_utc();
+        return Some(utc_now.to_offset(offset));
+    }
+
+    if let Ok(unix_ts) = s.parse::<i64>() {
+        if unix_ts >= 946702800 && // 2000-Jan-1
+            unix_ts < 4102462800 { // 2100-Jan-1
+
+            if let Ok(dt) = DateTimeImpl::from_unix_timestamp(unix_ts) {
+                let tz = rb_date_parser::get_current_timezone();
+                let local_time = tz.timestamp_opt(unix_ts, 0).earliest().unwrap();
+                let offset_in_sec = local_time.fixed_offset().offset().local_minus_utc();
+
+                let offset = UtcOffset::from_whole_seconds(offset_in_sec).unwrap();
+                return Some(dt.to_offset(offset));
             }
-            let date = time::Date::from_calendar_date(year, time::Month::try_from(month as u8).unwrap(), day as u8).unwrap();
-
-            let time = if let Some(hour) = dt.hour {
-                let min = dt.min.unwrap_or(0);
-                let sec = dt.sec.unwrap_or(0);
-                if let Some(nanos) = dt.sec_fraction {
-                    time::Time::from_hms_nano(hour as u8, min as u8, sec as u8, (nanos * 1000_000_000.0).trunc() as u32).unwrap()
-                } else {
-                    time::Time::from_hms(hour as u8, min as u8, sec as u8).unwrap()
-                }
-            } else {
-                time::Time::from_hms(0, 0, 0).unwrap()
-            };
-
-            let offset = time::UtcOffset::from_whole_seconds(dt.offset.unwrap_or_default()).unwrap();
-            Some(time::OffsetDateTime::new_in_offset(date, time, offset))
-        } else {
-            None
         }
     }
+
+    let offset_re = Regex::new(r"[+-][01][0-9]{3}$").unwrap();
+    let offset = if offset_re.is_match(s) { "" } else { " +0000" };
+    let s = s.to_owned() + offset;
+
+    let dt = if let Ok(dt) = rb_date_parser::parse(s.as_str()) {
+        dt
+    } else {
+        return None;
+    };
+    let year = dt.year();
+    let mut month = dt.month();
+    let mut day = dt.day();
+    if month > 12 {
+        std::mem::swap(&mut month, &mut day);
+    }
+    let date = time::Date::from_calendar_date(year, time::Month::try_from(month as u8).unwrap(), day as u8).unwrap();
+    let hour = dt.hour();
+    let min = dt.minute();
+    let sec = dt.second();
+    let nanos = dt.nanosecond();
+    let time = time::Time::from_hms_nano(hour as u8, min as u8, sec as u8, nanos).unwrap();
+    let offset = time::UtcOffset::from_whole_seconds(dt.offset().local_minus_utc()).unwrap();
+
+    let res = Some(time::OffsetDateTime::new_in_offset(date, time, offset));
+    println!("s={} date={:?} time={:?} offset = {:?} res={:?}", s, date, time, offset, res);
+    res
 }
 
 #[cfg(test)]

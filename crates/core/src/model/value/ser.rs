@@ -92,13 +92,11 @@ impl serde::Serializer for ValueSerializer {
 
     #[inline]
     fn serialize_f32(self, value: f32) -> Result<Value, SerError> {
-        println!("Called serialize_f32 value={}", value);
         ScalarSerializer.serialize_f32(value).map(Value::Scalar)
     }
 
     #[inline]
     fn serialize_f64(self, value: f64) -> Result<Value, SerError> {
-        println!("Called serialize_f64 value={}", value);
         ScalarSerializer.serialize_f64(value).map(Value::Scalar)
     }
 

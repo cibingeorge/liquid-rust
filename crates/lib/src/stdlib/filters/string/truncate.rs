@@ -129,7 +129,7 @@ impl Filter for TruncateWordsFilter {
     fn evaluate(&self, input: &dyn ValueView, runtime: &dyn Runtime) -> Result<Value> {
         let args = self.args.evaluate(runtime)?;
 
-        let words = args.length.unwrap_or(50) as usize;
+        let words = args.length.unwrap_or(15) as usize;
 
         let truncate_string = args.ellipsis.unwrap_or_else(|| "...".into());
 
@@ -137,7 +137,7 @@ impl Filter for TruncateWordsFilter {
 
         let input_string = input.to_kstr();
 
-        let word_list: Vec<&str> = input_string.split(' ').collect();
+        let word_list: Vec<&str> = input_string.split_whitespace().collect();
         let result = if words < word_list.len() {
             let result = itertools::join(word_list.iter().take(l), " ") + truncate_string.as_str();
             Value::scalar(result)

@@ -13,7 +13,7 @@ use super::Text;
 use super::{Filter, FilterArguments, FilterChain};
 use super::{Language, ParseMode};
 
-use pest::Parser;
+use pest::{Parser, Span};
 
 mod inner {
     #[derive(Parser)]
@@ -42,6 +42,17 @@ fn convert_pest_error(err: ::pest::error::Error<Rule>) -> Error {
         other => format!("{:?}", other),
     });
     Error::with_msg(err.to_string())
+}
+
+
+/// Generates a `liquid::Error` with the given message pointing to
+/// the pest
+fn error_from_span(span: Span, msg: String) -> Error {
+    let pest_error = ::pest::error::Error::new_from_span(
+        ::pest::error::ErrorVariant::CustomError { message: msg },
+        span,
+    );
+    convert_pest_error(pest_error)
 }
 
 /// Generates a `liquid::Error` with the given message pointing to
@@ -683,9 +694,16 @@ impl<'a> InvalidLiquidToken<'a> {
         // Reparses from the line where invalid liquid started, in order
         // to raise the error.
         let mut error = match LiquidParser::parse(Rule::LiquidFile, &text) {
-            Ok(_) => panic!("`LiquidParser::parse` should fail in InvalidLiquidTokens."),
+            Ok(_) => {
+                let span = invalid_token_position.span(&invalid_token_position);
+                return error_from_span(
+                    span,
+                     "Unknown Liquid parse error. Bad quoting?".to_owned()
+                ).into_err()
+            },
             Err(error) => error,
         };
+
 
         // Adds an offset to the line of the error, in order to show the right line
         // TODO when liquid::error is able to handle line/col information by itself

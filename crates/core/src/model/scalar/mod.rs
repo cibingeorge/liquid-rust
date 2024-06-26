@@ -6,13 +6,13 @@ mod date;
 mod datetime;
 pub(crate) mod ser;
 
-use core::panic;
 use std::cmp::Ordering;
 use std::{borrow::Cow, fmt};
 
 use crate::model::KString;
 use crate::model::KStringCow;
 use crate::model::KStringRef;
+use chrono::TimeZone;
 
 use crate::model::value::{DisplayCow, State};
 use crate::model::{Value, ValueView};
@@ -100,7 +100,7 @@ impl<'s> ScalarCow<'s> {
     pub fn to_integer(&self) -> Option<i64> {
         match self.0 {
             ScalarCowEnum::Integer(ref x) => Some(*x),
-            ScalarCowEnum::Str(ref x) => x.parse::<i64>().ok(),
+            ScalarCowEnum::Str(ref x) => x.trim().parse::<i64>().ok(),
             _ => None,
         }
     }
@@ -110,7 +110,7 @@ impl<'s> ScalarCow<'s> {
         match self.0 {
             ScalarCowEnum::Integer(ref x) => Some(*x as f64),
             ScalarCowEnum::Float(ref x) => Some(*x),
-            ScalarCowEnum::Str(ref x) => x.parse::<f64>().ok(),
+            ScalarCowEnum::Str(ref x) => x.trim().parse::<f64>().ok(),
             _ => None,
         }
     }
@@ -125,24 +125,29 @@ impl<'s> ScalarCow<'s> {
 
     /// Interpret as a date time, if possible
     pub fn to_date_time(&self) -> Option<DateTime> {
-        match self.0 {
+        //println!("to_Datetime input = {:?}", self.0);
+        let res = match self.0 {
             ScalarCowEnum::DateTime(ref x) => Some(*x),
-            ScalarCowEnum::Date(ref x) => {
-                Some(DateTime::from_ymd(x.year(), x.month(), x.day()))
-            },
+            ScalarCowEnum::Date(ref x) => DateTime::from_date(x),
+            ScalarCowEnum::Integer(ref x) => DateTime::from_unix_timestamp(*x),
             ScalarCowEnum::Str(ref x) => DateTime::from_str(x.as_str()),
             _ => None,
-        }
+        };
+        //println!("to_Datetime res = {:?}", res);
+        res
     }
 
     /// Interpret as a date time, if possible
     pub fn to_date(&self) -> Option<Date> {
-        match self.0 {
+        //println!("to_date input = {:?}", self.0);
+        let res = match self.0 {
             ScalarCowEnum::DateTime(ref x) => Some(x.date()),
             ScalarCowEnum::Date(ref x) => Some(*x),
             ScalarCowEnum::Str(ref x) => Date::from_str(x.as_str()),
             _ => None,
-        }
+        };
+        //println!("to_date res = {:?}", res);
+        res
     }
 
     /// Interpret as a Cow str, borrowing if possible
@@ -152,6 +157,55 @@ impl<'s> ScalarCow<'s> {
             other => other.into_string().into_cow_str(),
         }
     }
+
+    /// returns underlying integer
+    pub fn as_integer(&self) -> Option<i64> {
+        match self.0 {
+            ScalarCowEnum::Integer(x) => Some(x),
+            _ => None
+        }
+    }
+
+    /// returns underlying float
+    pub fn as_float(&self) -> Option<f64> {
+        match self.0 {
+            ScalarCowEnum::Float(x) => Some(x),
+            _ => None
+        }
+    }
+
+    /// returns underlying bool
+    pub fn as_bool(&self) -> Option<bool> {
+        match self.0 {
+            ScalarCowEnum::Bool(x) => Some(x),
+            _ => None
+        }
+    }
+
+    /// returns underlying datetime
+    pub fn as_datetime(&self) -> Option<DateTime> {
+        match &self.0 {
+            ScalarCowEnum::DateTime(x) => Some(*x),
+            _ => None
+        }
+    }
+
+    /// returns underlying date
+    pub fn as_date(&self) -> Option<Date> {
+        match &self.0 {
+            ScalarCowEnum::Date(x) => Some(*x),
+            _ => None
+        }
+    }
+
+    /// returns underlying string
+    pub fn as_str(&self) -> Option<&str> {
+        match &self.0 {
+            ScalarCowEnum::Str(x) => Some(x),
+            _ => None
+        }
+    }
+
 }
 
 impl<'s> fmt::Debug for ScalarCow<'s> {
@@ -327,7 +381,6 @@ impl fmt::Display for FormattedFloat {
         if !strf.contains('.') {
             strf.push_str(".0");
         }
-        println!("render FormattedFloat x={} formatted={}", self.0, strf);
         strf.fmt(f)
     }
 }
@@ -338,7 +391,6 @@ impl ValueView for f64 {
     }
 
     fn render(&self) -> DisplayCow<'_> {
-        println!("render float x={}", self);
         DisplayCow::Owned(Box::new(FormattedFloat(*self)))
     }
     fn source(&self) -> DisplayCow<'_> {
@@ -358,7 +410,6 @@ impl ValueView for f64 {
 
     fn to_kstr(&self) -> KStringCow<'_> {
         let s = self.render().to_string();
-        println!("to_kstr float x={} s={}", self, s);
         s.into()
     }
     fn to_value(&self) -> Value {
@@ -856,7 +907,7 @@ impl<'s> PartialOrd<KStringRef<'s>> for ScalarCow<'s> {
 impl<'s> Eq for ScalarCow<'s> {}
 
 fn scalar_eq<'s>(lhs: &ScalarCow<'s>, rhs: &ScalarCow<'s>) -> bool {
-    match (&lhs.0, &rhs.0) {
+    let res = match (&lhs.0, &rhs.0) {
         (&ScalarCowEnum::Integer(x), &ScalarCowEnum::Integer(y)) => x == y,
         (&ScalarCowEnum::Integer(x), &ScalarCowEnum::Float(y)) => (x as f64) == y,
         (&ScalarCowEnum::Float(x), &ScalarCowEnum::Integer(y)) => x == (y as f64),
@@ -868,13 +919,16 @@ fn scalar_eq<'s>(lhs: &ScalarCow<'s>, rhs: &ScalarCow<'s>) -> bool {
         (&ScalarCowEnum::Date(x), &ScalarCowEnum::DateTime(y)) => y.with_date(x) == y,
         (ScalarCowEnum::Str(x), ScalarCowEnum::Str(y)) => x == y,
         // encode Ruby truthiness: all values except false and nil are true
-        (_, &ScalarCowEnum::Bool(b)) | (&ScalarCowEnum::Bool(b), _) => b,
+        //(_, &ScalarCowEnum::Bool(b)) | (&ScalarCowEnum::Bool(b), _) => b,
         _ => false,
-    }
+    };
+
+    //println!("scalar/mod.rs scalar-eq res={} lhs={:?} rhs={:?}", res, lhs,rhs);
+    res
 }
 
 fn scalar_cmp<'s>(lhs: &ScalarCow<'s>, rhs: &ScalarCow<'s>) -> Option<Ordering> {
-    match (&lhs.0, &rhs.0) {
+    let res = match (&lhs.0, &rhs.0) {
         (&ScalarCowEnum::Integer(x), &ScalarCowEnum::Integer(y)) => x.partial_cmp(&y),
         (&ScalarCowEnum::Integer(x), &ScalarCowEnum::Float(y)) => (x as f64).partial_cmp(&y),
         (&ScalarCowEnum::Float(x), &ScalarCowEnum::Integer(y)) => x.partial_cmp(&(y as f64)),
@@ -886,7 +940,9 @@ fn scalar_cmp<'s>(lhs: &ScalarCow<'s>, rhs: &ScalarCow<'s>) -> Option<Ordering> 
         (&ScalarCowEnum::Date(x), &ScalarCowEnum::DateTime(y)) => y.with_date(x).partial_cmp(&y),
         (ScalarCowEnum::Str(x), ScalarCowEnum::Str(y)) => x.partial_cmp(y),
         _ => None,
-    }
+    };
+    //println!("scalar/mod.rs scalar-cmp res={:?} lhs={:?} rhs={:?}", res, lhs,rhs);
+    res
 }
 
 #[cfg(test)]

@@ -2,6 +2,9 @@
 
 use std::fmt;
 
+use itertools::Itertools;
+use itertools::Position;
+
 use crate::model::KStringCow;
 
 use crate::model::value::DisplayCow;
@@ -138,11 +141,41 @@ struct ArraySource<'s, T: ValueView> {
 
 impl<'s, T: ValueView> fmt::Display for ArraySource<'s, T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "[")?;
-        for item in self.s {
-            write!(f, "{}, ", item.render())?;
+        // write!(f, "[")?;
+        // for item in self.s {
+        //     write!(f, "{}, ", item.render())?;
+        // }
+        // write!(f, "]")?;
+
+        write!(f, "ArraySource[")?;
+        println!("[");
+        for (pos, item) in self.s.iter().with_position() {
+            if item.is_nil() {
+                write!(f, "nil")?;
+                println!("nil");
+            } else if item.is_array() || item.is_object() {
+                let val_rendered = item.render();
+                println!("array source is_array/is_object = {}", val_rendered);
+                write!(f, "{}", val_rendered)?;
+            } else {
+                let val_json = serde_json::to_string(&item.to_value()).unwrap();
+
+                write!(f, "{}", val_json)?;
+                let mut strng = val_json.to_string();
+                if strng.len() > 100 {
+                    strng = format!("{}..{}", &strng[0..50], &strng[(strng.len() - 10)..]);
+                }
+                println!("val_json = {}", strng);
+
+            }
+            //write!(f, "{}, ", item.render())?;
+            if !(pos == Position::Last || pos == Position::Only) {
+                println!(",");
+                write!(f, ", ")?;
+            }
         }
         write!(f, "]")?;
+        println!("]");
         Ok(())
     }
 }
@@ -153,9 +186,36 @@ struct ArrayRender<'s, T: ValueView> {
 
 impl<'s, T: ValueView> fmt::Display for ArrayRender<'s, T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for item in self.s {
-            write!(f, "{}", item.render())?;
+        write!(f, "[")?;
+        for (pos, item) in self.s.iter().with_position() {
+            if item.is_nil() {
+                write!(f, "nil")?;
+            } else if item.is_array() || item.is_object() {
+                let val_rendered = item.render();
+                write!(f, "{}", val_rendered)?;
+
+                let mut strng = val_rendered.to_string();
+                if strng.len() > 100 {
+                    strng = format!("{}..{}", &strng[0..50], &strng[(strng.len() - 10)..]);
+                }
+
+            } else {
+                let val_json = serde_json::to_string(&item.to_value()).unwrap();
+
+                write!(f, "{}", val_json)?;
+                let mut strng = val_json.to_string();
+                if strng.len() > 100 {
+                    strng = format!("{}..{}", &strng[0..50], &strng[(strng.len() - 10)..]);
+                }
+            }
+            //write!(f, "{}, ", item.render())?;
+
+            if !(pos == Position::Last || pos == Position::Only) {
+                write!(f, ", ")?;
+            }
+
         }
+        write!(f, "]")?;
         Ok(())
     }
 }
