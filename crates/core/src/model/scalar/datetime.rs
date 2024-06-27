@@ -32,6 +32,20 @@ impl DateTime {
             inner: DateTimeImpl::now_utc(),        }
     }
 
+
+    /// Create a `DateTime` from the inner implementation
+    pub fn from_chrono_datetime(dt: chrono::DateTime<chrono::FixedOffset>) -> Self {
+        let date = time::Date::from_calendar_date(dt.year(), time::Month::try_from(dt.month() as u8).unwrap(), dt.day() as u8).unwrap();
+        let time = time::Time::from_hms_nano(dt.hour() as u8, dt.minute() as u8, dt.second() as u8, dt.nanosecond()).unwrap();
+        let offset = time::UtcOffset::from_whole_seconds(dt.offset().local_minus_utc()).unwrap();
+
+        let inner = time::OffsetDateTime::new_in_offset(date, time, offset);
+
+        Self {
+            inner
+        }
+    }
+
     /// Makes a new NaiveDate from the calendar date (year, month and day).
     ///
     /// Panics on the out-of-range date, invalid month and/or day.
@@ -93,7 +107,6 @@ impl DateTime {
             let offset = UtcOffset::from_whole_seconds(offset_in_sec).unwrap();
             Self{inner: d.to_offset(offset)}
         }).ok();
-        //println!("from_unix_timestamp {:?}", res);
         res
     }
 
@@ -103,6 +116,7 @@ impl DateTime {
             inner: self.inner.replace_date(other.inner),
         }
     }
+
 
     /// Changes the associated time zone. This does not change the actual DateTime (but will change the string representation).
     pub fn with_offset(self, offset: time::UtcOffset) -> Self {
@@ -323,7 +337,6 @@ fn parse_date_time(s: &str) -> Option<DateTimeImpl> {
     let offset = time::UtcOffset::from_whole_seconds(dt.offset().local_minus_utc()).unwrap();
 
     let res = Some(time::OffsetDateTime::new_in_offset(date, time, offset));
-    println!("s={} date={:?} time={:?} offset = {:?} res={:?}", s, date, time, offset, res);
     res
 }
 
