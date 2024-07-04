@@ -70,7 +70,7 @@ impl Renderable for Increment {
     }
 
     fn is_blank(&self) -> bool {
-        true
+        false
     }
 }
 
@@ -136,7 +136,7 @@ impl Renderable for Decrement {
     }
 
     fn is_blank(&self) -> bool {
-        true
+        false
     }
 }
 

@@ -302,7 +302,9 @@ impl<'a, 'b> TagBlock<'a, 'b> {
             return Ok(None);
         }
 
-        let element = self.iter.next().expect("File shouldn't end before EOI.");
+        let element = self.iter.next().ok_or_else(|| {
+            Error::with_msg("File shouldn't end before EOI.")
+        })?;
 
         if element.as_rule() == Rule::EOI {
             return error_from_pair(
@@ -320,7 +322,9 @@ impl<'a, 'b> TagBlock<'a, 'b> {
                 .next()
                 .expect("Unwrapping TagInner")
                 .into_inner();
-            let name = tag.next().expect("Tags start by their identifier.");
+            let name = tag.next().ok_or_else(||{
+                Error::with_msg("Tags start by their identifier.")
+            })?;
             let name_str = name.as_str();
 
             // Check if this tag is the same as the block's reflected end-tag.
@@ -394,7 +398,10 @@ impl<'a, 'b> TagBlock<'a, 'b> {
                     .next()
                     .expect("Unwrapping TagInner")
                     .into_inner();
-                let name = tag.next().expect("Tags start by their identifier.");
+                let name = tag.next()
+                .ok_or_else(||{
+                    Error::with_msg("Tags start by their identifier.")
+                })?;
                 let name_str = name.as_str();
 
                 // Check if this tag is the same as the block's reflected end-tag.

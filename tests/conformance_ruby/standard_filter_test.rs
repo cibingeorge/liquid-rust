@@ -688,7 +688,7 @@ fn test_map() {
     );
     assert_template_result!(
         "abc",
-        r#"{{ ary | map:"foo" | map:"bar" }}"#,
+        r#"{% assign arr = ary | map:"foo" | map:"bar" %}{% for item in arr %}{{item}}{% endfor %}"#,
         o!({"ary": [{ "foo": { "bar": "a" } }, { "foo": { "bar": "b" } }, { "foo": { "bar": "c" } }]}),
     );
 }
@@ -706,17 +706,15 @@ fn test_map_calls_to_liquid() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#255
 fn test_map_on_hashes() {
     assert_template_result!(
         "4217",
-        r#"{{ thing | map: "foo" | map: "bar" }}"#,
+        r#"{% assign arr = thing | map: "foo" | map: "bar" %}{% for item in arr %}{{item}}{% endfor %}"#,
         o!({"thing": { "foo": [ { "bar": 42 }, { "bar": 17 } ] }}),
     );
 }
 
 #[test]
-#[should_panic] // liquid-rust#255
 fn test_legacy_map_on_hashes_with_dynamic_key() {
     let template = r#"{% assign key = "foo" %}{{ thing | map: key | map: "bar" }}"#;
     let hash = o!({ "foo": { "bar": 42 } });
@@ -1124,6 +1122,8 @@ fn test_at_least() {
     assert_template_result!("6", r#"{{ 5 | at_least:6 }}"#);
 
     assert_template_result!("5", r#"{{ 4.5 | at_least:5 }}"#);
+    assert_template_result!("5.1", r#"{{ 4.5 | at_least:5.1 }}"#);
+    assert_template_result!("5.1", r#"{{ 4 | at_least:5.1 }}"#);
     // Implementation specific: use of drops
 }
 

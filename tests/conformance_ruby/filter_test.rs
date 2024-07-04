@@ -122,7 +122,7 @@ fn test_sort() {
 
     assert_template_result!("1 2 3 4", "{{numbers | sort | join}}", assigns);
     assert_template_result!("alphabetic as expected", "{{words | sort | join}}", assigns);
-    assert_template_result!("3", "{{value | sort}}", assigns);
+    assert_template_result!("[3]", "{{value | sort}}", assigns);
     assert_template_result!("are flower", "{{arrays | sort | join}}", assigns);
     assert_template_result!(
         "Expected case sensitive",

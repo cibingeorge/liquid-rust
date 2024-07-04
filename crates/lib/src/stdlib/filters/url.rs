@@ -54,7 +54,6 @@ impl Filter for UrlDecodeFilter {
         }
 
         let s = input.to_kstr().replace('+', " ");
-
         let result = percent_encoding::percent_decode(s.as_bytes())
             .decode_utf8()
             .map_err(|_| invalid_input("Malformed UTF-8"))?
