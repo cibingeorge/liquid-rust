@@ -63,7 +63,7 @@ impl Renderable for RawT {
     }
 
     fn is_blank(&self) -> bool {
-        self.content.find(|c: char| !c.is_whitespace()).is_none()
+        false
     }
 
 }

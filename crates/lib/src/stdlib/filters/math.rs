@@ -76,7 +76,17 @@ impl Filter for AtLeastFilter {
             .or_else(|| {
                 input
                     .to_float()
-                    .and_then(|i| min.to_float().map(|min| Value::scalar(i.max(min))))
+                    .and_then(|i| {
+                        if let Some(min_val) = min.to_integer() {
+                            if (min_val as f64) < i {
+                                Some(Value::scalar(i))
+                            } else {
+                                Some(Value::scalar(min_val))
+                            }
+                        } else {
+                            min.to_float().map(|min| Value::scalar(i.max(min)))
+                        }
+                    })
             })
             .ok_or_else(|| invalid_argument("operand", "Number expected"))?;
 

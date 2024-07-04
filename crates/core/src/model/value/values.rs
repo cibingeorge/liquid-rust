@@ -143,7 +143,7 @@ impl ValueView for Value {
             Value::Nil => match state {
                 State::Truthy => false,
                 State::DefaultValue => true,
-                State::Empty => true,
+                State::Empty => false,
                 State::Blank => true,
             },
         }
@@ -437,6 +437,7 @@ mod test {
         // Truth table from https://stackoverflow.com/questions/885414/a-concise-explanation-of-nil-v-empty-v-blank-in-ruby-on-rails
         assert_eq!(empty, empty);
         assert_eq!(empty, blank);
+        assert_ne!(empty, value!(nil));
         assert_eq!(empty, value!(""));
         assert_ne!(empty, value!(" "));
         assert_eq!(empty, value!([]));
