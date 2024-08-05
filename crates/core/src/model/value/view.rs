@@ -1,7 +1,9 @@
 use std::cmp::Ordering;
 use std::fmt;
+use std::sync::Arc;
 
 use crate::model::KStringCow;
+use crate::model::LiquidDrop;
 
 use super::DisplayCow;
 use super::State;
@@ -54,6 +56,15 @@ pub trait ValueView: fmt::Debug {
     /// Tests whether this value is an object
     fn is_object(&self) -> bool {
         self.as_object().is_some()
+    }
+
+    /// Extracts the object value if it is a liquid drop.
+    fn as_liquid_drop(&self) -> Option<Arc<&dyn LiquidDrop>> {
+        None
+    }
+    /// Tests whether this value is a liquid drop
+    fn is_liquid_drop(&self) -> bool {
+        self.as_liquid_drop().is_some()
     }
 
     /// Extracts the state if it is one
@@ -110,6 +121,10 @@ impl<'v, V: ValueView + ?Sized> ValueView for &'v V {
         <V as ValueView>::as_object(self)
     }
 
+    fn as_liquid_drop(&self) -> Option<Arc<&dyn LiquidDrop>> {
+        <V as ValueView>::as_liquid_drop(self)
+    }
+
     fn as_state(&self) -> Option<State> {
         <V as ValueView>::as_state(self)
     }
@@ -156,6 +171,10 @@ impl<T: ValueView> ValueView for Option<T> {
 
     fn as_object(&self) -> Option<&dyn ObjectView> {
         forward(self).as_object()
+    }
+
+    fn as_liquid_drop(&self) -> Option<Arc<&dyn LiquidDrop>> {
+        forward(self).as_liquid_drop()
     }
 
     fn as_state(&self) -> Option<State> {
@@ -277,7 +296,7 @@ pub(crate) fn value_eq(lhs: &dyn ValueView, rhs: &dyn ValueView) -> bool {
         }
         return x.iter().all(|(key, value)| {
             y.get(key.as_str())
-                .map(|v| value_eq(v, value))
+                .as_ref().map(|v| value_eq(v, value))
                 .unwrap_or(false)
         });
     }
@@ -292,7 +311,6 @@ pub(crate) fn value_eq(lhs: &dyn ValueView, rhs: &dyn ValueView) -> bool {
         return lhs.query_state(state);
     }
 
-    //println!("View.rs value_eq lhs={:?} rhs={:?}", lhs.as_scalar(), rhs.as_scalar());
     match (lhs.as_scalar(), rhs.as_scalar()) {
         (Some(x), Some(y)) => return x == y,
         (None, None) => (),

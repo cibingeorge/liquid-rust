@@ -12,7 +12,6 @@ use std::{borrow::Cow, fmt};
 use crate::model::KString;
 use crate::model::KStringCow;
 use crate::model::KStringRef;
-use chrono::TimeZone;
 
 use crate::model::value::{DisplayCow, State};
 use crate::model::{Value, ValueView};
@@ -125,7 +124,6 @@ impl<'s> ScalarCow<'s> {
 
     /// Interpret as a date time, if possible
     pub fn to_date_time(&self) -> Option<DateTime> {
-        //println!("to_Datetime input = {:?}", self.0);
         let res = match self.0 {
             ScalarCowEnum::DateTime(ref x) => Some(*x),
             ScalarCowEnum::Date(ref x) => DateTime::from_date(x),
@@ -133,20 +131,17 @@ impl<'s> ScalarCow<'s> {
             ScalarCowEnum::Str(ref x) => DateTime::from_str(x.as_str()),
             _ => None,
         };
-        //println!("to_Datetime res = {:?}", res);
         res
     }
 
     /// Interpret as a date time, if possible
     pub fn to_date(&self) -> Option<Date> {
-        //println!("to_date input = {:?}", self.0);
         let res = match self.0 {
             ScalarCowEnum::DateTime(ref x) => Some(x.date()),
             ScalarCowEnum::Date(ref x) => Some(*x),
             ScalarCowEnum::Str(ref x) => Date::from_str(x.as_str()),
             _ => None,
         };
-        //println!("to_date res = {:?}", res);
         res
     }
 
@@ -923,7 +918,6 @@ fn scalar_eq<'s>(lhs: &ScalarCow<'s>, rhs: &ScalarCow<'s>) -> bool {
         _ => false,
     };
 
-    //println!("scalar/mod.rs scalar-eq res={} lhs={:?} rhs={:?}", res, lhs,rhs);
     res
 }
 
@@ -941,7 +935,6 @@ fn scalar_cmp<'s>(lhs: &ScalarCow<'s>, rhs: &ScalarCow<'s>) -> Option<Ordering> 
         (ScalarCowEnum::Str(x), ScalarCowEnum::Str(y)) => x.partial_cmp(y),
         _ => None,
     };
-    //println!("scalar/mod.rs scalar-cmp res={:?} lhs={:?} rhs={:?}", res, lhs,rhs);
     res
 }
 

@@ -221,7 +221,7 @@ impl ObjectView for NullObject {
         false
     }
 
-    fn get<'s>(&'s self, _index: &str) -> Option<&'s dyn ValueView> {
+    fn get<'s>(&'s self, _index: &str) -> Option<ValueCow<'s>> {
         None
     }
 }

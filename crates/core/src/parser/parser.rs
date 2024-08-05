@@ -1060,6 +1060,21 @@ impl<'a> TagToken<'a> {
             }
         }
     }
+
+    /// Tries to obtain a literal value from this token.
+    ///
+    /// The value is returned as a `Value`.
+    pub fn expect_string_literal(mut self) -> TryMatchToken<'a, Value> {
+        match self.unwrap_literal() {
+            Ok(t) => TryMatchToken::Matches(parse_literal(t)),
+            Err(_) => {
+                self.expected.push(Rule::Literal);
+                TryMatchToken::Fails(self)
+            }
+        }
+    }
+
+
     /// Tries to obtain a range from this token.
     ///
     /// The range is returned as a pair `(Expression, Expression)`.

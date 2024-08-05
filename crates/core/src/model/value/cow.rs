@@ -97,6 +97,12 @@ impl<'s> From<&'s Value> for ValueCow<'s> {
     }
 }
 
+impl<'s> From<&'s dyn ValueView> for ValueCow<'s> {
+    fn from(other: &'s dyn ValueView) -> Self {
+        ValueCow::Borrowed(other)
+    }
+}
+
 impl From<Scalar> for ValueCow<'static> {
     fn from(other: Scalar) -> Self {
         ValueCow::Owned(Value::Scalar(other))

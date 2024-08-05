@@ -64,10 +64,13 @@ pub fn derive(input: &DeriveInput) -> TokenStream {
                 }
             }
 
-            fn get<'liquid_derive_s>(&'liquid_derive_s self, index: &str) -> Option<&'liquid_derive_s dyn ::liquid::ValueView> {
+            fn get<'liquid_derive_s>(&'liquid_derive_s self, index: &str) -> Option<::liquid_core::ValueCow<'liquid_derive_s>> {
+                fn as_view<T: ::liquid_core::ValueView>(value: &T) -> &dyn ValueView {
+                    value
+                }
                 match index {
                     #(
-                        stringify!(#fields) => Some(&self.#fields),
+                        stringify!(#fields) => Some(as_view(&self.#fields).into()),
                     )*
                     _ => None,
                 }
@@ -138,10 +141,13 @@ pub fn core_derive(input: &DeriveInput) -> TokenStream {
                 }
             }
 
-            fn get<'liquid_derive_s>(&'liquid_derive_s self, index: &str) -> Option<&'liquid_derive_s dyn ::liquid_core::ValueView> {
+            fn get<'liquid_derive_s>(&'liquid_derive_s self, index: &str) -> Option<::liquid_core::ValueCow<'liquid_derive_s>> {
+                fn as_view<T: ::liquid_core::ValueView>(value: &T) -> &dyn ValueView {
+                    value
+                }
                 match index {
                     #(
-                        stringify!(#fields) => Some(&self.#fields),
+                        stringify!(#fields) => Some(as_view(&self.#fields).into()),
                     )*
                     _ => None,
                 }

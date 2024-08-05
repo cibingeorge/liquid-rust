@@ -5,7 +5,6 @@ use std::ops;
 mod strftime;
 use chrono::Timelike;
 use chrono::Datelike;
-use chrono_tz::OffsetComponents;
 use time::UtcOffset;
 use chrono::TimeZone;
 
