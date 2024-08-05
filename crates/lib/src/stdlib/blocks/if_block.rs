@@ -154,7 +154,6 @@ impl ParseBlock for UnlessBlock {
         };
 
         if is_blank {
-            //println!("Isblank =true");
             if_true = if_true.into_iter().filter(|x| !x.is_text()).collect();
             if_false = if_false.map(|x| x.into_iter().filter(|x| !x.is_text()).collect());
         }
@@ -290,7 +289,6 @@ impl BinaryCondition {
         let b = self.rh.evaluate(runtime)?;
         let cb = ValueViewCmp::new(b.as_view());
 
-        //println!("Binary condition left=a={:?} ca={:?} right=b={:?} cb={:?}", a, ca, b, cb);
         let result = match self.comparison {
             ComparisonOperator::Equals => ca == cb,
             ComparisonOperator::NotEquals => ca != cb,
@@ -300,7 +298,6 @@ impl BinaryCondition {
             ComparisonOperator::GreaterThanEquals => ca >= cb,
             ComparisonOperator::Contains => contains_check(a.as_view(), b.as_view())?,
         };
-        //std::io::stdout().write_all(&format!("BinaryCondition Evaluate self={} result={:?}\n", self, result).as_bytes());
         Ok(result)
     }
 }

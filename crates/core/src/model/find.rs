@@ -173,7 +173,6 @@ fn augmented_get<'o>(value: &'o dyn ValueView, index: &ScalarCow<'_>) -> Option<
     } else if let Some(obj) = value.as_object() {
         let index = index.to_kstr();
         obj.get(index.as_str())
-            .map(ValueCow::Borrowed)
             .or_else(|| match index.as_str() {
                 "size" => Some(ValueCow::Owned(Value::scalar(obj.size()))),
                 _ => None,

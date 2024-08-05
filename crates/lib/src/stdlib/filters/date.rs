@@ -31,15 +31,12 @@ struct DateFilter {
 impl Filter for DateFilter {
     fn evaluate(&self, input: &dyn ValueView, runtime: &dyn Runtime) -> Result<Value> {
         let args = self.args.evaluate(runtime)?;
-        //println!("Date filter input={:?} args={:?}", input, self.args);
 
         let date = input.as_scalar().and_then(|s| {
             s.to_date_time()});
-        //println!("Date filter date={:?}", date);
         let res = match date {
             Some(date) if !args.format.is_empty() => {
                 let s = date.format(args.format.as_str()).map_err(|_err| {
-                    //println!("Date error={:?} a", _err);
                     Error::with_msg(format!("Invalid date-format string: {}", args.format))
                 })?;
 
@@ -49,9 +46,7 @@ impl Filter for DateFilter {
                 Ok(input.to_value())
             },
         };
-        //println!("Date output={:?} input={:?}\n", res, input);
         res
-
     }
 }
 

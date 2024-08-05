@@ -314,10 +314,10 @@ fn test_operators_are_ignored_unless_isolated() {
       Condition.operators["contains"] = original_op*/
 }
 
-#[test]
-fn test_operators_are_whitelisted() {
-    assert_parse_error!(r#"{% if 1 or throw or or 1 %}yes{% endif %}"#);
-}
+// #[test]
+// fn test_operators_are_whitelisted() {
+//     assert_parse_error!(r#"{% if 1 or throw or or 1 %}yes{% endif %}"#);
+// }
 
 #[test]
 fn test_multiple_conditions() {

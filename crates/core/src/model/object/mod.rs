@@ -12,6 +12,7 @@ use crate::model::KStringCow;
 use crate::model::value::DisplayCow;
 use crate::model::State;
 use crate::model::{Value, ValueView};
+use crate::ValueCow;
 
 use itertools::Itertools;
 use itertools::Position;
@@ -19,6 +20,7 @@ pub use map::Object;
 pub use ser::to_object;
 
 /// Accessor for objects.
+
 pub trait ObjectView: ValueView {
     /// Cast to ValueView
     fn as_value(&self) -> &dyn ValueView;
@@ -36,7 +38,8 @@ pub trait ObjectView: ValueView {
     /// Access a contained `BoxedValue`.
     fn contains_key(&self, index: &str) -> bool;
     /// Access a contained `Value`.
-    fn get<'s>(&'s self, index: &str) -> Option<&'s dyn ValueView>;
+    ///
+    fn get<'s>(&'s self, index: &str) -> Option<ValueCow<'s>>;
 }
 
 impl ValueView for Object {
@@ -101,8 +104,8 @@ impl ObjectView for Object {
         Object::contains_key(self, index)
     }
 
-    fn get<'s>(&'s self, index: &str) -> Option<&'s dyn ValueView> {
-        Object::get(self, index).map(|v| v.as_view())
+    fn get<'s>(&'s self, index: &str) -> Option<ValueCow<'s>> {
+        Object::get(self, index).map(|v| v.into())
     }
 }
 
@@ -131,7 +134,7 @@ impl<'o, O: ObjectView + ?Sized> ObjectView for &'o O {
         <O as ObjectView>::contains_key(self, index)
     }
 
-    fn get<'s>(&'s self, index: &str) -> Option<&'s dyn ValueView> {
+    fn get<'s>(&'s self, index: &str) -> Option<ValueCow<'s>> {
         <O as ObjectView>::get(self, index)
     }
 }
@@ -234,8 +237,8 @@ impl<K: ObjectIndex, V: ValueView, S: ::std::hash::BuildHasher> ObjectView for H
         HashMap::contains_key(self, index)
     }
 
-    fn get<'s>(&'s self, index: &str) -> Option<&'s dyn ValueView> {
-        HashMap::get(self, index).map(as_view)
+    fn get<'s>(&'s self, index: &str) -> Option<ValueCow<'s>> {
+        HashMap::get(self, index).map(|x| x.to_value().into())
     }
 }
 
@@ -305,8 +308,8 @@ impl<K: ObjectIndex, V: ValueView> ObjectView for BTreeMap<K, V> {
         BTreeMap::contains_key(self, index)
     }
 
-    fn get<'s>(&'s self, index: &str) -> Option<&'s dyn ValueView> {
-        BTreeMap::get(self, index).map(as_view)
+    fn get<'s>(&'s self, index: &str) -> Option<ValueCow<'s>> {
+        BTreeMap::get(self, index).map(|x| as_view(x).into())
     }
 }
 

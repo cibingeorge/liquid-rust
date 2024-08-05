@@ -9,6 +9,7 @@ mod find;
 mod object;
 mod scalar;
 mod value;
+mod liquid_drop;
 
 mod ser;
 
@@ -17,6 +18,7 @@ pub use find::*;
 pub use object::*;
 pub use scalar::*;
 pub use value::*;
+pub use liquid_drop::*;
 
 pub use kstring::KString;
 pub use kstring::KStringCow;

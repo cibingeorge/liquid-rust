@@ -112,11 +112,11 @@ struct SortFilter {
     args: PropertyArgs,
 }
 
-fn safe_property_getter<'a>(value: &'a Value, property: &str) -> &'a dyn ValueView {
+fn safe_property_getter<'a>(value: &'a Value, property: &str) -> ValueCow<'a> {
     value
         .as_object()
         .and_then(|obj| obj.get(property))
-        .unwrap_or(&Value::Nil)
+        .unwrap_or(liquid_core::ValueCow::Borrowed(&Value::Nil))
 }
 
 impl Filter for SortFilter {
@@ -132,10 +132,9 @@ impl Filter for SortFilter {
         if let Some(property) = &args.property {
             // Using unwrap is ok since all of the elements are objects
             sorted.sort_by(|a, b| {
-                nil_safe_compare(
-                    safe_property_getter(a, property),
-                    safe_property_getter(b, property),
-                )
+                let a = safe_property_getter(a, property);
+                let b = safe_property_getter(b, property);
+                nil_safe_compare(&a, &b)
                 .unwrap_or(cmp::Ordering::Equal)
             });
         } else {
@@ -255,6 +254,7 @@ impl Filter for WhereFilter {
                 .filter(|object| {
                     object
                         .get(property)
+                        .as_ref()
                         .map(|value| {
                             let value = ValueViewCmp::new(value);
                             target_value == value
