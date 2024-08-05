@@ -375,10 +375,10 @@ impl<'s, O: ObjectView> fmt::Display for ObjectRender<'s, O> {
             if v_val.is_array() || v_val.is_object() {
                 let val_rendered = v.render();
                 write!(f, "\"{}\"=>{}", k, val_rendered)?;
-                let mut strng = val_rendered.to_string();
-                if strng.len() > 100 {
-                    strng = format!("{}..{}", &strng[0..50], &strng[(strng.len() - 10)..]);
-                }
+                // let mut strng = val_rendered.to_string();
+                // if strng.len() > 100 {
+                //     strng = format!("{}..{}", &strng[0..50], &strng[(strng.len() - 10)..]);
+                // }
                 //println!("Array or Obj\"{}\"=>{}", k, strng);
             } else if v_val.is_nil() {
                 //println!("\"{}\"=>nil", k);

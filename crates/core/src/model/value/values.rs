@@ -12,7 +12,7 @@ use super::{ValueView, ValueViewCmp};
 use crate::model::array::{Array, ArrayView};
 use crate::model::object::{Object, ObjectView};
 use crate::model::scalar::{Scalar, ScalarCow};
-use crate::model::DropObj;
+use crate::model::DropWrapper;
 use crate::model::LiquidDrop;
 
 /// An enum to represent different value types
@@ -24,7 +24,7 @@ pub enum Value {
     /// A sequence of `Value`s.
     Array(Array),
     /// Custom liquid drop.
-    Drop(DropObj),
+    LiquidDrop(DropWrapper),
     /// A sequence of key/`Value` pairs.
     Object(Object),
     /// Query symbol.
@@ -47,7 +47,7 @@ impl Value {
 
     /// Creates a value from a liquid drop.
     pub fn liquid_drop(value: Arc<dyn LiquidDrop>) -> Value {
-        Value::Drop(DropObj::new(value))
+        Value::LiquidDrop(DropWrapper::new(value))
     }
 
     /// Performs the conversion.
@@ -57,7 +57,7 @@ impl Value {
             Value::Object(ref x) => x,
             Value::Array(ref x) => x,
             Value::State(ref x) => x,
-            Value::Drop(ref x) => x,
+            Value::LiquidDrop(ref x) => x,
             Value::Nil => self,
         }
     }
@@ -122,7 +122,7 @@ impl ValueView for Value {
             Value::Array(ref x) => x.render(),
             Value::Object(ref x) => x.render(),
             Value::State(ref x) => x.render(),
-            Value::Drop(ref x) => x.render(),
+            Value::LiquidDrop(ref x) => x.render(),
             Value::Nil => DisplayCow::Borrowed(&""),
         }
     }
@@ -133,7 +133,7 @@ impl ValueView for Value {
             Value::Array(ref x) => x.source(),
             Value::Object(ref x) => x.source(),
             Value::State(ref x) => x.source(),
-            Value::Drop(ref x) => x.source(),
+            Value::LiquidDrop(ref x) => x.source(),
             Value::Nil => DisplayCow::Owned(Box::new(super::StrDisplay {
                 s: self.type_name(),
             })),
@@ -146,7 +146,7 @@ impl ValueView for Value {
             Value::Array(ref x) => x.type_name(),
             Value::Object(ref x) => x.type_name(),
             Value::State(ref x) => x.type_name(),
-            Value::Drop(ref x) => x.type_name(),
+            Value::LiquidDrop(ref x) => x.type_name(),
             Value::Nil => "nil",
         }
     }
@@ -157,7 +157,7 @@ impl ValueView for Value {
             Value::Array(ref x) => x.query_state(state),
             Value::Object(ref x) => x.query_state(state),
             Value::State(ref x) => x.query_state(state),
-            Value::Drop(ref x) => x.query_state(state),
+            Value::LiquidDrop(ref x) => x.query_state(state),
             Value::Nil => match state {
                 State::Truthy => false,
                 State::DefaultValue => true,
@@ -173,7 +173,7 @@ impl ValueView for Value {
             Value::Array(ref x) => x.to_kstr(),
             Value::Object(ref x) => x.to_kstr(),
             Value::State(ref x) => x.to_kstr(),
-            Value::Drop(ref x) => x.to_kstr(),
+            Value::LiquidDrop(ref x) => x.to_kstr(),
             Value::Nil => KStringCow::from_static(""),
         }
     }
@@ -187,7 +187,7 @@ impl ValueView for Value {
             Value::Array(ref x) => Value::Array(x.clone()),
             Value::Object(ref x) => Value::Object(x.clone()),
             Value::State(ref x) => Value::State(*x),
-            Value::Drop(ref x) => Value::Drop(x.clone()),
+            Value::LiquidDrop(ref x) => Value::LiquidDrop(x.clone()),
             Value::Nil => Value::Nil,
         }
     }
@@ -207,7 +207,7 @@ impl ValueView for Value {
     fn as_object(&self) -> Option<&dyn ObjectView> {
         match self {
             Value::Object(ref s) => Some(s),
-            Value::Drop(ref s) => Some(s),
+            Value::LiquidDrop(ref s) => Some(s),
             _ => None,
         }
     }
