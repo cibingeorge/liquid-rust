@@ -165,19 +165,19 @@ impl<'s, T: ValueView> fmt::Display for ArrayRender<'s, T> {
                 let val_rendered = item.render();
                 write!(f, "{}", val_rendered)?;
 
-                let mut strng = val_rendered.to_string();
-                if strng.len() > 100 {
-                    strng = format!("{}..{}", &strng[0..50], &strng[(strng.len() - 10)..]);
-                }
+                // let mut strng = val_rendered.to_string();
+                // if strng.len() > 100 {
+                //     strng = format!("{}..{}", &strng[0..50], &strng[(strng.len() - 10)..]);
+                // }
 
             } else {
                 let val_json = serde_json::to_string(&item.to_value()).unwrap();
 
                 write!(f, "{}", val_json)?;
-                let mut strng = val_json.to_string();
-                if strng.len() > 100 {
-                    strng = format!("{}..{}", &strng[0..50], &strng[(strng.len() - 10)..]);
-                }
+                // let mut strng = val_json.to_string();
+                // if strng.len() > 100 {
+                //     strng = format!("{}..{}", &strng[0..50], &strng[(strng.len() - 10)..]);
+                // }
             }
 
             if !(pos == Position::Last || pos == Position::Only) {

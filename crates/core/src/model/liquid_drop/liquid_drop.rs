@@ -14,7 +14,7 @@ use crate::ValueView;
 pub trait LiquidDrop: ObjectView + Send + Sync {}
 
 #[derive(Clone, Debug, Serialize)]
-struct DropData {
+pub struct DropObject {
     #[serde(skip)]
     inner: Arc<dyn LiquidDrop>,
     #[serde(rename = "drop_type")]
@@ -30,122 +30,124 @@ struct DropData {
 // }
 
 
-impl<'de> Deserialize<'de> for DropData {
+impl<'de> Deserialize<'de> for DropObject {
     fn deserialize<D>(_deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de> {
             let val = NullDrop{};
             let typename = val.type_name().to_owned();
-            Ok(DropData{ inner: Arc::new(val),  _type: typename})
+            Ok(DropObject{ inner: Arc::new(val),  _type: typename})
     }
 }
 
-// Wrapper to help serialization of drops
+/// Wrapper to help serialization of drops
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "type")]
-pub enum DropObj {
-    DropObj(DropData),
+pub enum DropWrapper {
+    /// Wrapper to help serialization of drops
+    DropObject(DropObject),
 }
 
 
-impl DropObj {
+impl DropWrapper {
+    /// Create new drop wrapper for a liquid drop object
     pub fn new(val: Arc<dyn LiquidDrop>) -> Self {
         let typename = val.type_name().to_owned();
-        DropObj::DropObj(DropData{inner: val, _type: typename})
+        DropWrapper::DropObject(DropObject{inner: val, _type: typename})
     }
 }
 
-impl ValueView for DropObj {
+impl ValueView for DropWrapper {
     fn as_debug(&self) -> &dyn fmt::Debug {
         match self {
-            DropObj::DropObj(d) => d.inner.as_debug(),
+            DropWrapper::DropObject(d) => d.inner.as_debug(),
         }
     }
 
     fn render(&self) -> DisplayCow<'_> {
         match self {
-            DropObj::DropObj(d) => d.inner.render(),
+            DropWrapper::DropObject(d) => d.inner.render(),
         }
     }
 
     fn source(&self) -> DisplayCow<'_> {
         match self {
-            DropObj::DropObj(d) => d.inner.source(),
+            DropWrapper::DropObject(d) => d.inner.source(),
         }
     }
 
     fn type_name(&self) -> &'static str {
         match self {
-            DropObj::DropObj(d) => d.inner.type_name(),
+            DropWrapper::DropObject(d) => d.inner.type_name(),
         }
     }
 
     fn as_object(&self) -> Option<&dyn ObjectView> {
         match self {
-            DropObj::DropObj(d) => d.inner.as_object(),
+            DropWrapper::DropObject(d) => d.inner.as_object(),
         }
     }
 
     fn query_state(&self, state: State) -> bool {
         match self {
-            DropObj::DropObj(d) => d.inner.query_state(state),
+            DropWrapper::DropObject(d) => d.inner.query_state(state),
         }
     }
 
     fn to_kstr(&self) -> KStringCow<'_> {
         match self {
-            DropObj::DropObj(d) => d.inner.to_kstr(),
+            DropWrapper::DropObject(d) => d.inner.to_kstr(),
         }
     }
 
     fn to_value(&self) -> crate::Value {
         match self {
-            DropObj::DropObj(d) => d.inner.to_value(),
+            DropWrapper::DropObject(d) => d.inner.to_value(),
         }
     }
 }
 
 
-impl ObjectView for DropObj {
+impl ObjectView for DropWrapper {
     fn as_value(&self) -> &dyn ValueView {
         match self {
-            DropObj::DropObj(d) => d.inner.as_value(),
+            DropWrapper::DropObject(d) => d.inner.as_value(),
         }
     }
 
     fn size(&self) -> i64 {
         match self {
-            DropObj::DropObj(d) => d.inner.size(),
+            DropWrapper::DropObject(d) => d.inner.size(),
         }
     }
 
     fn keys<'k>(&'k self) -> Box<dyn Iterator<Item = KStringCow<'k>> + 'k> {
         match self {
-            DropObj::DropObj(d) => d.inner.keys(),
+            DropWrapper::DropObject(d) => d.inner.keys(),
         }
     }
 
     fn values<'k>(&'k self) -> Box<dyn Iterator<Item = &'k dyn ValueView> + 'k> {
         match self {
-            DropObj::DropObj(d) => d.inner.values(),
+            DropWrapper::DropObject(d) => d.inner.values(),
         }
     }
 
     fn iter<'k>(&'k self) -> Box<dyn Iterator<Item = (KStringCow<'k>, &'k dyn ValueView)> + 'k> {
         match self {
-            DropObj::DropObj(d) => d.inner.iter(),
+            DropWrapper::DropObject(d) => d.inner.iter(),
         }
     }
 
     fn contains_key(&self, index: &str) -> bool {
         match self {
-            DropObj::DropObj(d) => d.inner.contains_key(index),
+            DropWrapper::DropObject(d) => d.inner.contains_key(index),
         }
     }
 
     fn get<'s>(&'s self, index: &str) -> Option<ValueCow<'s>> {
         match self {
-            DropObj::DropObj(d) => d.inner.get(index),
+            DropWrapper::DropObject(d) => d.inner.get(index),
         }
     }
 }

@@ -1,5 +1,5 @@
 use std::fmt;
-use std::io::{BufWriter, Write};
+use std::io::Write;
 
 use liquid_core::error::ResultLiquidExt;
 use liquid_core::model::{ValueView, ValueViewCmp};
@@ -479,7 +479,7 @@ fn parse_condition(arguments: TagTokenIter<'_>) -> Result<Condition> {
         iter: arguments,
         peeked: None,
     };
-    let mut lh = parse_conjunction_chain(&mut arguments)?;
+    let lh = parse_conjunction_chain(&mut arguments)?;
     //std::io::stdout().write_all(&format!("Parsed condition={} \n", lh).as_bytes());
 
     // while let Some(token) = arguments.next() {
