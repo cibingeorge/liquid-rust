@@ -332,17 +332,9 @@ impl<'s, O: ObjectView> ObjectSource<'s, O> {
 
 impl<'s, O: ObjectView> fmt::Display for ObjectSource<'s, O> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{{ObjectSource")?;
-        for (pos, (k, v)) in self.s.iter().with_position() {
-            if pos == Position::First {
-                write!(f, "{{")?;
-            }
+        write!(f, "{{")?;
+        for (k, v) in self.s.iter() {
             write!(f, r#""{}": {}, "#, k, v.render())?;
-            if !(pos == Position::Last || pos == Position::Only) {
-                write!(f, "}}")?;
-            } else {
-                write!(f, ",")?;
-            }
         }
         write!(f, "}}")?;
         Ok(())

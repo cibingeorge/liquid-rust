@@ -10,14 +10,14 @@ struct TestEmpty {}
 fn test_empty_value() {
     let uut = TestEmpty {};
 
-    assert_eq!(uut.render().to_string(), "");
+    assert_eq!(uut.render().to_string(), "{}");
     assert_eq!(uut.source().to_string(), "{}");
     assert_eq!(uut.type_name(), "object");
     assert_eq!(uut.query_state(liquid::model::State::Truthy), true);
     assert_eq!(uut.query_state(liquid::model::State::DefaultValue), true);
     assert_eq!(uut.query_state(liquid::model::State::Empty), true);
     assert_eq!(uut.query_state(liquid::model::State::Blank), true);
-    assert_eq!(uut.to_kstr(), "");
+    assert_eq!(uut.to_kstr(), "{}");
     assert_eq!(uut.to_value(), liquid::model::value!({}));
     assert!(uut.as_object().is_some());
 }
