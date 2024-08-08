@@ -1054,7 +1054,6 @@ dependencies = [
 [[package]]
 name = "rb_date_parser"
 version = "0.1.0"
-source = "git+https://github.com/blueshift-labs/rb_date_parser#b42199d73078878bbc471e29c464f4a514f2eae5"
 dependencies = [
  "chrono",
  "chrono-tz",

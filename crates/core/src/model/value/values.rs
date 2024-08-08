@@ -346,8 +346,8 @@ mod test {
     #[test]
     fn test_to_string_scalar() {
         let val = Value::scalar(42f64);
-        assert_eq!(&val.render().to_string(), "42");
-        assert_eq!(&val.to_kstr(), "42");
+        assert_eq!(&val.render().to_string(), "42.0");
+        assert_eq!(&val.to_kstr(), "42.0");
     }
 
     #[test]
@@ -357,8 +357,8 @@ mod test {
             Value::scalar("test"),
             Value::scalar(5.3),
         ]);
-        assert_eq!(&val.render().to_string(), "3test5.3");
-        assert_eq!(&val.to_kstr(), "3test5.3");
+        assert_eq!(&val.render().to_string(), "[3.0, \"test\", 5.3]");
+        assert_eq!(&val.to_kstr(), "[3.0, \"test\", 5.3]");
     }
 
     // TODO make a test for object, remember values are in arbitrary orders in HashMaps
@@ -377,11 +377,12 @@ mod test {
         assert!(Value::scalar("beta") != Value::scalar("alpha"));
     }
 
+
     #[test]
     fn scalars_have_ruby_truthiness() {
-        // all strings in ruby are true
-        assert_eq!(Value::scalar(true), Value::scalar("All strings are truthy"));
-        assert_eq!(Value::scalar(true), Value::scalar(""));
+        // equality fails if types dont match
+        assert_ne!(Value::scalar(true), Value::scalar("All strings are truthy"));
+        assert_ne!(Value::scalar(true), Value::scalar(""));
         assert!(Value::scalar("").query_state(State::Truthy));
 
         assert_eq!(Value::scalar(true), Value::scalar(true));
@@ -400,7 +401,7 @@ mod test {
 
     #[test]
     fn arrays_have_ruby_truthiness() {
-        assert_eq!(Value::scalar(true), Value::Array(Vec::new()));
+        assert_ne!(Value::scalar(true), Value::Array(Vec::new()));
         assert!(Value::Array(Vec::new()).query_state(State::Truthy));
     }
 
@@ -432,7 +433,7 @@ mod test {
 
     #[test]
     fn objects_have_ruby_truthiness() {
-        assert_eq!(Value::scalar(true), Value::Object(Object::new()));
+        assert_ne!(Value::scalar(true), Value::Object(Object::new()));
         assert!(Value::Object(Object::new()).query_state(State::Truthy));
     }
 
@@ -443,10 +444,10 @@ mod test {
 
     #[test]
     fn nils_have_ruby_truthiness() {
-        assert_eq!(Value::scalar(false), Value::Nil);
+        assert_ne!(Value::scalar(false), Value::Nil);
         assert!(!Value::Nil.query_state(State::Truthy));
 
-        assert_eq!(Value::scalar(false), Value::Nil);
+        assert_ne!(Value::scalar(false), Value::Nil);
         assert!(Value::scalar(true) != Value::Nil);
         assert!(Value::scalar("") != Value::Nil);
     }

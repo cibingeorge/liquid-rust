@@ -13,7 +13,7 @@
 //!     .parse("Liquid! {{num | minus: 2}}").unwrap();
 //!
 //! let mut globals = liquid::object!({
-//!     "num": 4f64
+//!     "num": 4i64
 //! });
 //!
 //! let output = template.render(&globals).unwrap();

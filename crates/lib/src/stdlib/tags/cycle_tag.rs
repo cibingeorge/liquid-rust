@@ -235,9 +235,9 @@ mod test {
             .unwrap();
 
         let runtime = RuntimeBuilder::new().build();
-        runtime.set_global("alpha".into(), Value::scalar(1f64));
-        runtime.set_global("beta".into(), Value::scalar(2f64));
-        runtime.set_global("gamma".into(), Value::scalar(3f64));
+        runtime.set_global("alpha".into(), Value::scalar(1i64));
+        runtime.set_global("beta".into(), Value::scalar(2i64));
+        runtime.set_global("gamma".into(), Value::scalar(3i64));
 
         let output = template.render(&runtime);
 

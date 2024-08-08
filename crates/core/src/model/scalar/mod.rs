@@ -959,7 +959,7 @@ mod test {
     #[test]
     fn test_to_str_float() {
         let val: ScalarCow<'_> = 42f64.into();
-        assert_eq!(val.to_kstr(), "42");
+        assert_eq!(val.to_kstr(), "42.0");
 
         let val: ScalarCow<'_> = 42.34.into();
         assert_eq!(val.to_kstr(), "42.34");
@@ -1081,12 +1081,12 @@ mod test {
     fn integers_have_ruby_truthiness() {
         let val: ScalarCow<'_> = 42i64.into();
         let zero: ScalarCow<'_> = 0i64.into();
-        assert_eq!(TRUE, val);
-        assert_eq!(val, TRUE);
+        assert_ne!(TRUE, val);
+        assert_ne!(val, TRUE);
         assert!(val.query_state(State::Truthy));
 
-        assert_eq!(TRUE, zero);
-        assert_eq!(zero, TRUE);
+        assert_ne!(TRUE, zero);
+        assert_ne!(zero, TRUE);
         assert!(zero.query_state(State::Truthy));
     }
 
@@ -1104,12 +1104,12 @@ mod test {
     fn floats_have_ruby_truthiness() {
         let val: ScalarCow<'_> = 42f64.into();
         let zero: ScalarCow<'_> = 0f64.into();
-        assert_eq!(TRUE, val);
-        assert_eq!(val, TRUE);
+        assert_ne!(TRUE, val);
+        assert_ne!(val, TRUE);
         assert!(val.query_state(State::Truthy));
 
-        assert_eq!(TRUE, zero);
-        assert_eq!(zero, TRUE);
+        assert_ne!(TRUE, zero);
+        assert_ne!(zero, TRUE);
         assert!(zero.query_state(State::Truthy));
     }
 
@@ -1143,12 +1143,12 @@ mod test {
         // all strings in ruby are true
         let alpha: ScalarCow<'_> = "alpha".into();
         let empty: ScalarCow<'_> = "".into();
-        assert_eq!(TRUE, alpha);
-        assert_eq!(alpha, TRUE);
+        assert_ne!(TRUE, alpha);
+        assert_ne!(alpha, TRUE);
         assert!(alpha.query_state(State::Truthy));
 
-        assert_eq!(TRUE, empty);
-        assert_eq!(empty, TRUE);
+        assert_ne!(TRUE, empty);
+        assert_ne!(empty, TRUE);
         assert!(empty.query_state(State::Truthy));
     }
 

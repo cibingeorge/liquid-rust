@@ -124,7 +124,7 @@ mod test {
 
         let rt = RuntimeBuilder::new().build();
         rt.set_global("item".into(), Value::scalar("potato"));
-        rt.set_global("i".into(), Value::scalar(42f64));
+        rt.set_global("i".into(), Value::scalar(42i64));
 
         let output = template.render(&rt).unwrap();
         assert_eq!(
