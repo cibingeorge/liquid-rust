@@ -318,9 +318,9 @@ mod test {
     #[test]
     fn remove_whitespaces() {
         let text = r#"
-			{%- case x %}
-			{% when 1 %}
-				{% assign var=1 %}
+            {%- case x %}
+            {% when 1 %}
+                {% assign var=1 %}
             {% when 2 %}
                 {% assign var=2 %}
             {% when 3 %}
@@ -328,9 +328,9 @@ mod test {
             {% when 4 %}
                 {% assign var=4 %}
             {% when 5 %}
-				{% assign var=5 %}
+                {% assign var=5 %}
             {% else %}
-             	{% assign var=0 %}
+                {% assign var=0 %}
             {% endcase -%}
         "#;
         let options = options();
@@ -341,14 +341,14 @@ mod test {
         assert_eq!(template.render(&runtime).unwrap(), "");
 
         let text = r#"
-			{%- case x %}
-			{% when 1 %}
-				{% case y %}
-				{% when 1 %}
-					{% assign var=1 %}
-				{% when 2 %}
-					{% assign var=2 %}
-				{% endcase %}
+            {%- case x %}
+            {% when 1 %}
+                {% case y %}
+                {% when 1 %}
+                    {% assign var=1 %}
+                {% when 2 %}
+                    {% assign var=2 %}
+                {% endcase %}
             {% when 2 %}
                 {% assign var=2 %}
             {% when 3 %}
@@ -356,16 +356,16 @@ mod test {
             {% when 4 %}
                 {% assign var=4 %}
             {% when 5 %}
-				{% assign var=5 %}
+                {% assign var=5 %}
             {% else %}
-             	{% assign var=0 %}
+                 {% assign var=0 %}
             {% endcase -%}
         "#;
         let template = parser::parse(text, &options).map(runtime::Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         runtime.set_global("x".into(), Value::scalar(1));
-		runtime.set_global("y".into(), Value::scalar(1));
+        runtime.set_global("y".into(), Value::scalar(1));
         assert_eq!(template.render(&runtime).unwrap(), "");
     }
 
@@ -373,20 +373,20 @@ mod test {
     #[test]
     fn will_not_remove_whitespaces() {
         let text = r#"
-			{%- case x %}
-			{% when 1 %}
-				{% assign var=1 %}
+            {%- case x %}
+            {% when 1 %}
+                {% assign var=1 %}
             {% when 2 %}
                 {% assign var=2 %}
             {% when 3 %}
                 {% assign var=3 %}
-				single nonempty section
+                single nonempty section
             {% when 4 %}
                 {% assign var=4 %}
             {% when 5 %}
-				{% assign var=5 %}
+                {% assign var=5 %}
             {% else %}
-             	{% assign var=0 %}
+                 {% assign var=0 %}
             {% endcase -%}
         "#;
         let options = options();
@@ -397,16 +397,16 @@ mod test {
         assert_ne!(template.render(&runtime).unwrap(), "");
 
         let text = r#"
-			{%- case x %}
-			{% when 1 %}
-				{% case y %}
-				{% when 1 %}
-					{% assign var=1 %}
-				{% when 2 %}
-					{% assign var=2 %}
-				{% else %}
-					single nonempty section
-				{% endcase %}
+            {%- case x %}
+            {% when 1 %}
+                {% case y %}
+                {% when 1 %}
+                    {% assign var=1 %}
+                {% when 2 %}
+                    {% assign var=2 %}
+                {% else %}
+                    single nonempty section
+                {% endcase %}
             {% when 2 %}
                 {% assign var=2 %}
             {% when 3 %}
@@ -414,16 +414,16 @@ mod test {
             {% when 4 %}
                 {% assign var=4 %}
             {% when 5 %}
-				{% assign var=5 %}
+                {% assign var=5 %}
             {% else %}
-             	{% assign var=0 %}
+                 {% assign var=0 %}
             {% endcase -%}
         "#;
         let template = parser::parse(text, &options).map(runtime::Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         runtime.set_global("x".into(), Value::scalar(1));
-		runtime.set_global("y".into(), Value::scalar(1));
+        runtime.set_global("y".into(), Value::scalar(1));
         assert_ne!(template.render(&runtime).unwrap(), "");
     }
 

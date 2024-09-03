@@ -552,8 +552,8 @@ mod test {
     fn if_remove_whitespaces() {
         let text = r#"
         {%- if 6 < 7  %}
-        	{% assign var = "A" %}
-        	{% assign var2 = "B" %}
+            {% assign var = "A" %}
+            {% assign var2 = "B" %}
             {% if 5 < 7  %}
                 {% assign var = "A" %}
                 {% assign var2 = "B" %}
@@ -573,8 +573,8 @@ mod test {
     fn if_doesnt_remove_whitespaces() {
         let text = r#"
         {%- if 6 < 7  %}
-        	{% assign var = "A" %}
-        	{% assign var2 = "B" %}
+            {% assign var = "A" %}
+            {% assign var2 = "B" %}
             {% if 5 < 7  %}
                 {% assign var = "A" %}
                 {% assign var2 = "B" %}
@@ -678,8 +678,8 @@ mod test {
     fn unless_remove_whitespaces() {
         let text = r#"
         {%- unless 6 > 7  %}
-        	{% assign var = "A" %}
-        	{% assign var2 = "B" %}
+            {% assign var = "A" %}
+            {% assign var2 = "B" %}
             {% unless 5 > 7  %}
                 {% assign var = "A" %}
                 {% assign var2 = "B" %}
@@ -699,8 +699,8 @@ mod test {
     fn unless_doesnt_remove_whitespaces() {
         let text = r#"
         {%- unless 6 > 7  %}
-        	{% assign var = "A" %}
-        	{% assign var2 = "B" %}
+            {% assign var = "A" %}
+            {% assign var2 = "B" %}
             {% unless 5 > 7  %}
                 {% assign var = "A" %}
                 {% assign var2 = "B" %}
